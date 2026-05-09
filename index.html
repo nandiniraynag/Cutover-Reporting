@@ -1,0 +1,2944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>FEB 2027 IM 2.2 CB — SIT Cutover Command Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+/* ═══════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════ */
+:root{
+  --bg:#05070f;
+  --s0:#080c18;
+  --s1:#0c1220;
+  --s2:#101828;
+  --s3:#162035;
+  --b0:#1c2d47;
+  --b1:#243860;
+  --b2:#2d4878;
+  --green:#16a34a;--green-l:#22c55e;--green-xl:#4ade80;--green-dim:rgba(34,197,94,.1);--green-glow:rgba(34,197,94,.2);
+  --teal:#0891b2;--teal-l:#06b6d4;--teal-xl:#22d3ee;--teal-dim:rgba(6,182,212,.1);
+  --amber:#b45309;--amber-l:#f59e0b;--amber-xl:#fbbf24;--amber-dim:rgba(245,158,11,.1);--amber-glow:rgba(245,158,11,.2);
+  --red:#b91c1c;--red-l:#ef4444;--red-xl:#f87171;--red-dim:rgba(239,68,68,.1);--red-glow:rgba(239,68,68,.25);
+  --blue:#1d4ed8;--blue-l:#3b82f6;--blue-xl:#60a5fa;--blue-dim:rgba(59,130,246,.1);
+  --purple:#7c3aed;--purple-l:#a855f7;--purple-dim:rgba(168,85,247,.1);
+  --t0:#f0f6ff;--t1:#c8d8f0;--t2:#8aa0c0;--t3:#4a6080;--t4:#2a3850;
+  --font:'Outfit',sans-serif;
+  --mono:'IBM Plex Mono',monospace;
+  --r4:4px;--r6:6px;--r8:8px;--r10:10px;--r12:12px;--r16:16px;
+}
+
+/* ═══════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:13px;scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--t0);font-family:var(--font);
+  min-height:100vh;overflow-x:hidden;
+  background-image:
+    radial-gradient(ellipse 70% 40% at 15% 0,rgba(6,182,212,.04) 0,transparent 60%),
+    radial-gradient(ellipse 50% 30% at 85% 100%,rgba(59,130,246,.04) 0,transparent 60%);
+}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--b1);border-radius:2px}
+
+/* ═══════════════════════════════════════
+   TYPOGRAPHY
+═══════════════════════════════════════ */
+h1,h2,h3{font-family:var(--font);letter-spacing:-.02em}
+.mono{font-family:var(--mono)}
+.label{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--t3);font-family:var(--mono)}
+.caption{font-size:10px;color:var(--t2);font-family:var(--mono)}
+
+/* ═══════════════════════════════════════
+   STICKY HEADER
+═══════════════════════════════════════ */
+#site-header{
+  position:sticky;top:0;z-index:100;
+  background:rgba(5,7,15,.92);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--b0);
+  padding:10px 20px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.hdr-brand{display:flex;flex-direction:column;gap:1px}
+.hdr-eyebrow{
+  font-size:9px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--teal-l);font-family:var(--mono);
+}
+.hdr-title{font-size:1.15rem;font-weight:800;letter-spacing:-.025em;line-height:1.1}
+.hdr-title em{color:var(--teal-l);font-style:normal}
+.hdr-meta{font-size:10px;color:var(--t3);font-family:var(--mono)}
+.hdr-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.status-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:10px;font-family:var(--mono);font-weight:500;
+  padding:4px 10px;border-radius:20px;border:1px solid;
+}
+.chip-red{color:var(--red-xl);background:var(--red-dim);border-color:rgba(239,68,68,.3)}
+.chip-green{color:var(--green-xl);background:var(--green-dim);border-color:rgba(34,197,94,.25)}
+.pulse-dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:blink 1.3s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
+.hdr-refresh{font-size:9px;color:var(--t3);font-family:var(--mono)}
+
+/* ═══════════════════════════════════════
+   FILTER BAR
+═══════════════════════════════════════ */
+#filter-bar{
+  position:sticky;top:55px;z-index:90;
+  background:rgba(8,12,24,.95);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--b0);
+  padding:8px 20px;
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+}
+.filter-select{
+  background:var(--s2);border:1px solid var(--b0);color:var(--t1);
+  font-family:var(--mono);font-size:10px;
+  padding:5px 28px 5px 10px;border-radius:var(--r6);cursor:pointer;
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234a6080'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 8px center;
+  transition:border-color .2s,background-color .2s;
+}
+.filter-select:hover{border-color:var(--b2);background-color:var(--s3)}
+.filter-select:focus{outline:none;border-color:var(--teal-l);box-shadow:0 0 0 2px rgba(6,182,212,.15)}
+.filter-toggle{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--s2);border:1px solid var(--b0);color:var(--t2);
+  font-family:var(--mono);font-size:10px;
+  padding:5px 10px;border-radius:var(--r6);cursor:pointer;
+  transition:all .2s;user-select:none;
+}
+.filter-toggle.active{background:var(--teal-dim);border-color:var(--teal-l);color:var(--teal-xl)}
+.filter-toggle .tog-icon{font-size:11px}
+.filter-reset{
+  background:transparent;border:1px solid var(--b0);color:var(--t3);
+  font-family:var(--mono);font-size:10px;
+  padding:5px 10px;border-radius:var(--r6);cursor:pointer;
+  transition:all .2s;margin-left:auto;
+}
+.filter-reset:hover{border-color:var(--red-l);color:var(--red-xl);background:var(--red-dim)}
+.filter-counter{
+  font-family:var(--mono);font-size:10px;color:var(--t2);
+  background:var(--s3);padding:4px 10px;border-radius:var(--r6);border:1px solid var(--b0);
+  white-space:nowrap;
+}
+.filter-counter span{color:var(--teal-xl);font-weight:600}
+
+/* ═══════════════════════════════════════
+   MAIN LAYOUT
+═══════════════════════════════════════ */
+main{padding:16px 20px;max-width:1600px;margin:0 auto}
+
+/* ═══════════════════════════════════════
+   KPI STRIP
+═══════════════════════════════════════ */
+.kpi-strip{
+  display:grid;grid-template-columns:repeat(6,1fr);
+  gap:10px;margin-bottom:16px;
+}
+.kpi-tile{
+  background:var(--s1);border:1px solid var(--b0);border-radius:var(--r10);
+  padding:14px 16px;position:relative;overflow:hidden;
+  transition:transform .15s,border-color .2s,box-shadow .2s;cursor:default;
+  animation:fadeSlideUp .4s ease both;
+}
+.kpi-tile:nth-child(1){animation-delay:.05s}
+.kpi-tile:nth-child(2){animation-delay:.1s}
+.kpi-tile:nth-child(3){animation-delay:.15s}
+.kpi-tile:nth-child(4){animation-delay:.2s}
+.kpi-tile:nth-child(5){animation-delay:.25s}
+.kpi-tile:nth-child(6){animation-delay:.3s}
+@keyframes fadeSlideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.kpi-tile:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.kpi-tile::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .2s;border-radius:inherit;pointer-events:none}
+.kpi-tile.k-green::before{background:linear-gradient(135deg,rgba(34,197,94,.06) 0,transparent 60%)}
+.kpi-tile.k-teal::before{background:linear-gradient(135deg,rgba(6,182,212,.06) 0,transparent 60%)}
+.kpi-tile.k-amber::before{background:linear-gradient(135deg,rgba(245,158,11,.06) 0,transparent 60%)}
+.kpi-tile.k-red::before{background:linear-gradient(135deg,rgba(239,68,68,.08) 0,transparent 60%)}
+.kpi-tile.k-blue::before{background:linear-gradient(135deg,rgba(59,130,246,.06) 0,transparent 60%)}
+.kpi-tile:hover::before{opacity:1}
+.kpi-label{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--t3);font-family:var(--mono);margin-bottom:5px}
+.kpi-val{font-size:1.85rem;font-weight:800;line-height:1;letter-spacing:-.03em;margin-bottom:3px}
+.kpi-sub{font-size:10px;color:var(--t3);font-family:var(--mono)}
+.kpi-bar-wrap{height:2px;background:var(--b0);border-radius:1px;margin-top:8px;overflow:hidden}
+.kpi-bar{height:100%;border-radius:1px;transition:width 1.4s cubic-bezier(.4,0,.2,1)}
+.kpi-icon{position:absolute;top:12px;right:14px;font-size:17px;opacity:.12}
+.kpi-tile{cursor:pointer}
+.kpi-ask-btn{
+  display:inline-flex;align-items:center;gap:4px;
+  margin-top:8px;font-size:9px;font-family:var(--mono);font-weight:500;
+  color:var(--t3);border:1px solid var(--b0);
+  background:transparent;border-radius:20px;padding:3px 9px;
+  cursor:pointer;transition:all .2s;width:fit-content;
+  letter-spacing:.06em;
+}
+.kpi-ask-btn:hover{border-color:var(--teal-l);color:var(--teal-xl);background:var(--teal-dim)}
+.kpi-ask-btn .ask-spark{font-size:10px}
+
+/* ── AI MODAL ── */
+#ai-modal-overlay{
+  position:fixed;inset:0;z-index:9998;
+  background:rgba(0,0,0,.7);backdrop-filter:blur(6px);
+  display:none;align-items:flex-end;justify-content:flex-end;
+  padding:20px;
+}
+#ai-modal-overlay.open{display:flex}
+#ai-modal{
+  width:420px;max-width:calc(100vw - 40px);
+  background:var(--s1);border:1px solid var(--b1);border-radius:var(--r12);
+  box-shadow:0 24px 80px rgba(0,0,0,.7),0 0 0 1px rgba(6,182,212,.08);
+  display:flex;flex-direction:column;overflow:hidden;
+  animation:modalIn .25s cubic-bezier(.4,0,.2,1) both;
+  max-height:calc(100vh - 80px);
+}
+@keyframes modalIn{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.modal-head{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:14px 16px;border-bottom:1px solid var(--b0);
+  background:linear-gradient(90deg,rgba(6,182,212,.05),transparent);
+  flex-shrink:0;
+}
+.modal-icon{
+  width:36px;height:36px;min-width:36px;border-radius:var(--r8);
+  background:linear-gradient(135deg,rgba(6,182,212,.2),rgba(59,130,246,.15));
+  border:1px solid rgba(6,182,212,.3);
+  display:flex;align-items:center;justify-content:center;font-size:17px;
+}
+.modal-head-text{flex:1}
+.modal-kpi-name{font-size:11px;font-weight:700;color:var(--teal-xl);letter-spacing:.04em}
+.modal-kpi-val{font-size:20px;font-weight:800;letter-spacing:-.03em;line-height:1.1;margin-top:2px}
+.modal-close{
+  background:none;border:none;color:var(--t3);cursor:pointer;
+  font-size:16px;padding:4px;border-radius:4px;line-height:1;
+  transition:color .15s,background .15s;flex-shrink:0;
+}
+.modal-close:hover{color:var(--t0);background:var(--s3)}
+
+/* Quick prompts */
+.modal-prompts{
+  padding:10px 14px 6px;border-bottom:1px solid var(--b0);flex-shrink:0;
+}
+.modal-prompts-label{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);font-family:var(--mono);margin-bottom:7px}
+.modal-prompt-chips{display:flex;flex-wrap:wrap;gap:5px}
+.modal-chip{
+  font-size:10px;font-family:var(--mono);padding:4px 10px;border-radius:20px;
+  border:1px solid var(--b0);background:var(--s2);color:var(--t2);
+  cursor:pointer;transition:all .18s;
+}
+.modal-chip:hover{border-color:var(--teal-l);color:var(--teal-xl);background:var(--teal-dim)}
+.modal-chip.active{border-color:var(--teal-l);color:var(--teal-xl);background:var(--teal-dim)}
+
+/* Chat area */
+.modal-chat{
+  flex:1;overflow-y:auto;padding:12px 14px;
+  display:flex;flex-direction:column;gap:10px;min-height:180px;max-height:340px;
+}
+.chat-msg{display:flex;gap:8px;align-items:flex-start}
+.chat-msg.user{flex-direction:row-reverse}
+.chat-avatar{
+  width:26px;height:26px;min-width:26px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+  flex-shrink:0;margin-top:2px;
+}
+.chat-avatar.ai-av{background:linear-gradient(135deg,rgba(6,182,212,.25),rgba(59,130,246,.2));color:var(--teal-xl);border:1px solid rgba(6,182,212,.3)}
+.chat-avatar.user-av{background:rgba(168,85,247,.2);color:var(--purple-l);border:1px solid rgba(168,85,247,.25)}
+.chat-bubble{
+  max-width:280px;padding:9px 12px;border-radius:var(--r8);
+  font-size:11px;line-height:1.6;
+}
+.chat-bubble.ai{background:var(--s2);color:var(--t1);border:1px solid var(--b0);border-radius:4px var(--r8) var(--r8) var(--r8)}
+.chat-bubble.user{background:rgba(6,182,212,.12);color:var(--teal-xl);border:1px solid rgba(6,182,212,.2);border-radius:var(--r8) 4px var(--r8) var(--r8)}
+.chat-bubble.ai strong{color:var(--t0)}
+.chat-bubble.ai .hi{color:var(--teal-xl)}
+.chat-bubble.ai .warn{color:var(--amber-xl)}
+.chat-bubble.ai .danger{color:var(--red-xl)}
+.chat-bubble.ai .ok{color:var(--green-xl)}
+.chat-typing{display:flex;align-items:center;gap:3px;padding:10px 14px}
+.typing-dot{width:5px;height:5px;border-radius:50%;background:var(--teal-l);animation:typingBounce .9s ease-in-out infinite}
+.typing-dot:nth-child(2){animation-delay:.15s}
+.typing-dot:nth-child(3){animation-delay:.3s}
+@keyframes typingBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
+
+/* Input row */
+.modal-input-row{
+  display:flex;gap:6px;padding:10px 14px;border-top:1px solid var(--b0);
+  background:var(--s2);flex-shrink:0;
+}
+.modal-input{
+  flex:1;background:var(--s3);border:1px solid var(--b0);color:var(--t0);
+  font-family:var(--mono);font-size:10px;padding:8px 12px;border-radius:var(--r6);
+  outline:none;transition:border-color .2s;
+}
+.modal-input:focus{border-color:var(--teal-l);box-shadow:0 0 0 2px rgba(6,182,212,.1)}
+.modal-input::placeholder{color:var(--t3)}
+.modal-send{
+  background:linear-gradient(135deg,var(--teal),var(--blue-l));
+  border:none;color:#fff;width:34px;height:34px;border-radius:var(--r6);
+  cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;
+  transition:opacity .15s,transform .1s;flex-shrink:0;
+}
+.modal-send:hover{opacity:.85}
+.modal-send:active{transform:scale(.95)}
+.modal-send:disabled{opacity:.4;cursor:default}
+
+/* ═══════════════════════════════════════
+   CARD COMPONENT
+═══════════════════════════════════════ */
+.card{
+  background:var(--s1);border:1px solid var(--b0);border-radius:var(--r12);
+  overflow:hidden;transition:border-color .2s;
+}
+.card:hover{border-color:var(--b1)}
+.card-head{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:11px 16px;border-bottom:1px solid var(--b0);
+}
+.card-title{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--t2)}
+.card-body{padding:16px}
+.card-body-0{padding:0}
+
+/* ═══════════════════════════════════════
+   LAYOUT GRIDS
+═══════════════════════════════════════ */
+.row{display:grid;gap:12px;margin-bottom:12px}
+.col-1{grid-template-columns:1fr}
+.col-2{grid-template-columns:1fr 1fr}
+.col-3{grid-template-columns:1fr 1fr 1fr}
+.col-32{grid-template-columns:3fr 2fr}
+.col-23{grid-template-columns:2fr 3fr}
+.col-21{grid-template-columns:2fr 1fr}
+
+/* ═══════════════════════════════════════
+   BADGES & CHIPS
+═══════════════════════════════════════ */
+.badge{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:9px;padding:2px 7px;border-radius:4px;
+  font-weight:600;letter-spacing:.07em;text-transform:uppercase;
+  font-family:var(--mono);white-space:nowrap;border:1px solid;
+}
+.b-complete{background:var(--green-dim);color:var(--green-xl);border-color:rgba(34,197,94,.2)}
+.b-issue{background:var(--red-dim);color:var(--red-xl);border-color:rgba(239,68,68,.25);animation:badge-pulse 2s ease-in-out infinite}
+@keyframes badge-pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.3)}50%{box-shadow:0 0 0 4px rgba(239,68,68,.08)}}
+.b-sent{background:var(--blue-dim);color:var(--blue-xl);border-color:rgba(59,130,246,.2)}
+.b-planned{background:rgba(74,96,128,.12);color:var(--t2);border-color:rgba(74,96,128,.2)}
+.b-warning{background:var(--amber-dim);color:var(--amber-xl);border-color:rgba(245,158,11,.2)}
+.b-cp{background:var(--teal-dim);color:var(--teal-xl);border-color:rgba(6,182,212,.2)}
+
+/* ═══════════════════════════════════════
+   TOOLTIP
+═══════════════════════════════════════ */
+#tt{
+  position:fixed;z-index:9999;pointer-events:none;display:none;
+  background:rgba(8,12,24,.97);border:1px solid var(--b1);border-radius:var(--r8);
+  padding:10px 14px;max-width:280px;
+  box-shadow:0 12px 40px rgba(0,0,0,.6);
+}
+.tt-title{font-size:11px;font-weight:600;color:var(--t0);margin-bottom:6px;line-height:1.3}
+.tt-row{display:flex;justify-content:space-between;gap:14px;margin-bottom:3px}
+.tt-key{font-size:9px;color:var(--t3);font-family:var(--mono);letter-spacing:.06em}
+.tt-val{font-size:10px;color:var(--t1);font-family:var(--mono);font-weight:500}
+
+/* ═══════════════════════════════════════
+   GANTT
+═══════════════════════════════════════ */
+.gantt-wrap{overflow-x:auto;overflow-y:visible;max-height:480px;overflow-y:auto}
+.gantt-tbl{width:100%;border-collapse:collapse;min-width:1100px}
+.gantt-tbl th{
+  font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);
+  padding:7px 8px;text-align:left;border-bottom:1px solid var(--b0);
+  font-weight:500;font-family:var(--mono);background:var(--s1);
+  position:sticky;top:0;z-index:3;
+}
+.gantt-tbl td{padding:3px 8px;border-bottom:1px solid rgba(28,45,71,.4);vertical-align:middle}
+.gantt-tbl tr:hover td{background:rgba(16,24,40,.6)}
+.g-phase-row td{
+  background:var(--s2);border-top:1px solid var(--b0);
+  font-size:9px;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--teal-l);font-weight:700;font-family:var(--mono);
+  padding:7px 8px;cursor:pointer;user-select:none;
+}
+.g-phase-row:hover td{background:var(--s3)}
+.g-phase-toggle{font-size:11px;margin-right:5px;transition:transform .2s;display:inline-block}
+.g-phase-row.collapsed .g-phase-toggle{transform:rotate(-90deg)}
+.g-task-name{font-size:11px;color:var(--t0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;display:block}
+.g-task-owner{font-size:9px;color:var(--t3);font-family:var(--mono)}
+.g-dur{font-size:9px;color:var(--t3);font-family:var(--mono);white-space:nowrap}
+.g-bar-cell{position:relative;min-width:0}
+.g-track{position:relative;height:22px;border-radius:3px}
+.g-bar-baseline{position:absolute;height:5px;top:9px;border-radius:2px;background:rgba(74,96,128,.3);z-index:1}
+.g-bar-actual{position:absolute;height:11px;top:6px;border-radius:3px;z-index:2;cursor:pointer;transition:opacity .15s,filter .15s}
+.g-bar-actual:hover{filter:brightness(1.25)}
+.g-bar-done{background:linear-gradient(90deg,var(--green),rgba(34,197,94,.7))}
+.g-bar-issue{background:var(--red-l);animation:bar-shimmer 1.8s ease-in-out infinite}
+.g-bar-sent{background:var(--blue-l);opacity:.75}
+.g-bar-planned{background:var(--t3);opacity:.5}
+@keyframes bar-shimmer{0%,100%{opacity:.9;filter:brightness(1)}50%{opacity:.6;filter:brightness(.8)}}
+.g-bar-cp{outline:1.5px dashed var(--teal-l);outline-offset:2px;border-radius:3px}
+.g-today-line{position:absolute;top:0;bottom:0;width:1.5px;background:var(--amber-l);z-index:4;pointer-events:none}
+.g-today-label{
+  position:absolute;top:-17px;transform:translateX(-50%);
+  font-size:8px;font-family:var(--mono);color:var(--amber-xl);
+  background:var(--amber-dim);border:1px solid rgba(245,158,11,.3);
+  padding:1px 5px;border-radius:3px;white-space:nowrap;
+}
+.g-blocker-dot{
+  position:absolute;width:7px;height:7px;border-radius:50%;
+  background:var(--red-l);top:0;right:-2px;z-index:5;
+  animation:blocker-pulse 1.2s ease-in-out infinite;
+  box-shadow:0 0 0 0 rgba(239,68,68,.5);
+}
+@keyframes blocker-pulse{
+  0%{box-shadow:0 0 0 0 rgba(239,68,68,.6);transform:scale(1)}
+  70%{box-shadow:0 0 0 6px rgba(239,68,68,0);transform:scale(1.1)}
+  100%{box-shadow:0 0 0 0 rgba(239,68,68,0);transform:scale(1)}
+}
+.date-header-cell{
+  text-align:center;padding:4px 0;min-width:28px;
+  font-size:8px;color:var(--t3);font-family:var(--mono);
+  border-right:1px solid var(--b0);
+}
+.date-header-cell.weekend{background:rgba(28,45,71,.2)}
+
+/* ═══════════════════════════════════════
+   TASK DETAIL DRAWER
+═══════════════════════════════════════ */
+#task-drawer{
+  background:var(--s2);border:1px solid var(--b1);border-radius:var(--r10);
+  padding:0;margin-top:10px;overflow:hidden;
+  max-height:0;transition:max-height .35s cubic-bezier(.4,0,.2,1);
+}
+#task-drawer.open{max-height:500px}
+.drawer-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;border-bottom:1px solid var(--b0);
+}
+.drawer-title{font-size:13px;font-weight:700;color:var(--t0)}
+.drawer-close{background:none;border:none;color:var(--t3);cursor:pointer;font-size:16px;line-height:1;padding:2px 6px;border-radius:4px}
+.drawer-close:hover{color:var(--t0);background:var(--s3)}
+.drawer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px}
+.drawer-field label{font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);font-family:var(--mono);display:block;margin-bottom:3px}
+.drawer-field span{font-size:11px;color:var(--t1);font-family:var(--mono);word-break:break-word}
+
+/* ═══════════════════════════════════════
+   GAUGE
+═══════════════════════════════════════ */
+.gauge-section{display:flex;flex-direction:column;align-items:center;padding:20px 16px 12px;gap:6px}
+.gauge-svg-wrap{width:210px;height:125px;position:relative}
+.gauge-svg-wrap svg{width:100%;height:100%}
+.gauge-center{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:flex-end;padding-bottom:8px;
+}
+.gauge-pct{font-size:2.2rem;font-weight:800;letter-spacing:-.04em;line-height:1}
+.gauge-count{font-size:10px;color:var(--t3);font-family:var(--mono)}
+.gauge-label{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--t3);font-family:var(--mono)}
+.gauge-status{font-size:11px;font-weight:600}
+.phase-bars{width:100%;padding:0 16px 16px;display:flex;flex-direction:column;gap:10px}
+.pb-item{}
+.pb-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.pb-name{font-size:10px;font-weight:500;color:var(--t1)}
+.pb-pct{font-size:11px;font-weight:700;font-family:var(--mono)}
+.pb-track{height:6px;background:var(--s3);border-radius:3px;overflow:hidden}
+.pb-fill{height:100%;border-radius:3px;transition:width 1.3s cubic-bezier(.4,0,.2,1)}
+.pb-sub{font-size:9px;color:var(--t3);font-family:var(--mono);margin-top:3px}
+
+/* ═══════════════════════════════════════
+   BLOCKED TASKS PANEL
+═══════════════════════════════════════ */
+.blocker-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:14px}
+.blocker-card{
+  border:1px solid;border-radius:var(--r10);padding:14px;
+  transition:transform .15s,box-shadow .2s;position:relative;overflow:hidden;
+}
+.blocker-card:hover{transform:translateY(-2px)}
+.blocker-card.sev-critical{border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.04);box-shadow:0 0 24px rgba(239,68,68,.1)}
+.blocker-card.sev-high{border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.04)}
+.blocker-card.sev-medium{border-color:rgba(59,130,246,.25);background:rgba(59,130,246,.04)}
+.blocker-card.sev-resolved{border-color:rgba(34,197,94,.2);background:rgba(34,197,94,.04)}
+.bc-icon{font-size:20px;margin-bottom:8px}
+.bc-title{font-size:12px;font-weight:700;color:var(--t0);margin-bottom:4px;line-height:1.3}
+.bc-id{font-size:9px;font-family:var(--mono);color:var(--t3);margin-bottom:6px}
+.bc-meta{font-size:10px;color:var(--t2);font-family:var(--mono);line-height:1.6;margin-bottom:8px}
+.bc-delay{font-size:12px;font-weight:700;font-family:var(--mono);margin-bottom:10px}
+.bc-recovery{font-size:10px;color:var(--t2);line-height:1.5;margin-bottom:10px;padding:8px;background:var(--s2);border-radius:var(--r6);border-left:2px solid}
+.bc-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:10px;font-family:var(--mono);font-weight:500;
+  padding:5px 12px;border-radius:var(--r6);border:1px solid;cursor:pointer;
+  transition:all .2s;background:transparent;
+}
+.bc-btn.btn-resolve{color:var(--green-xl);border-color:rgba(34,197,94,.3)}
+.bc-btn.btn-resolve:hover{background:var(--green-dim);border-color:var(--green-l)}
+.bc-btn.btn-resolved{color:var(--green-xl);border-color:rgba(34,197,94,.3);background:var(--green-dim);cursor:default}
+
+/* Resolved accordion */
+.resolved-accordion{margin:0 14px 14px;border:1px solid var(--b0);border-radius:var(--r8);overflow:hidden}
+.accordion-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;cursor:pointer;background:var(--s2);
+  font-size:11px;font-weight:600;color:var(--t1);transition:background .2s;
+}
+.accordion-head:hover{background:var(--s3)}
+.accordion-arrow{font-size:12px;transition:transform .25s;color:var(--t3)}
+.accordion-head.open .accordion-arrow{transform:rotate(180deg)}
+.accordion-body{max-height:0;overflow:hidden;transition:max-height .35s cubic-bezier(.4,0,.2,1)}
+.accordion-body.open{max-height:800px}
+.resolved-list{padding:10px 14px;display:flex;flex-direction:column;gap:6px}
+.resolved-item{
+  display:flex;align-items:center;gap:10px;padding:7px 10px;
+  background:var(--s1);border-radius:var(--r6);border:1px solid var(--b0);
+}
+.ri-name{font-size:11px;color:var(--t1);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ri-owner{font-size:9px;color:var(--t3);font-family:var(--mono);min-width:80px}
+.ri-date{font-size:9px;color:var(--t3);font-family:var(--mono);min-width:55px;text-align:right}
+
+/* ═══════════════════════════════════════
+   INSIGHT PANEL
+═══════════════════════════════════════ */
+.insight-panel{
+  background:linear-gradient(135deg,rgba(6,182,212,.04) 0,rgba(59,130,246,.03) 100%);
+  border:1px solid rgba(6,182,212,.18);border-radius:var(--r12);
+  padding:0;overflow:hidden;margin-bottom:12px;
+}
+.insight-head{
+  display:flex;align-items:center;gap:10px;padding:10px 16px;
+  border-bottom:1px solid rgba(6,182,212,.12);
+}
+.insight-icon{font-size:14px;color:var(--teal-l)}
+.insight-title{font-size:12px;font-weight:700;color:var(--teal-xl);letter-spacing:.04em}
+.insight-subtitle{font-size:9px;font-family:var(--mono);color:var(--t3);margin-top:1px}
+.insight-body{padding:10px 16px;display:flex;flex-direction:column;gap:5px}
+.insight-item{
+  display:flex;align-items:center;gap:10px;
+  padding:7px 12px;border-radius:var(--r6);background:rgba(0,0,0,.12);
+}
+.insight-dot{width:6px;height:6px;min-width:6px;border-radius:50%}
+.insight-text{font-size:11px;color:var(--t1);line-height:1.4}
+.insight-text strong{color:var(--t0);font-weight:600}
+
+/* ═══════════════════════════════════════
+   RESOURCE BARS
+═══════════════════════════════════════ */
+.res-list{display:flex;flex-direction:column;gap:0}
+.res-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 16px;border-bottom:1px solid rgba(28,45,71,.5);
+}
+.res-item:last-child{border-bottom:none}
+.res-av{
+  width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;
+}
+.res-info{flex:1}
+.res-name{font-size:11px;font-weight:500;color:var(--t0)}
+.res-role{font-size:9px;color:var(--t3);font-family:var(--mono)}
+.res-bar-wrap{flex:1;height:4px;background:var(--s3);border-radius:2px;overflow:hidden}
+.res-bar{height:100%;border-radius:2px;background:var(--teal-l);transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.res-count{font-size:1rem;font-weight:700;font-family:var(--mono);min-width:26px;text-align:right}
+.spof-badge{
+  font-size:8px;font-family:var(--mono);color:var(--amber-xl);
+  background:var(--amber-dim);border:1px solid rgba(245,158,11,.2);
+  padding:1px 6px;border-radius:3px;white-space:nowrap;
+}
+
+
+/* ═══════════════════════════════════════
+   SECTION DIVIDERS
+═══════════════════════════════════════ */
+.section-divider{
+  display:flex;align-items:center;gap:12px;
+  padding:16px 0 10px;border-top:1px solid var(--b0);
+  margin-top:8px;margin-bottom:12px;
+}
+.section-divider-icon{font-size:18px}
+.section-divider-title{font-family:var(--font);font-size:1rem;font-weight:800;letter-spacing:-.02em;color:var(--t0)}
+.section-divider-sub{font-size:10px;color:var(--t3);font-family:var(--mono)}
+
+/* ═══════════════════════════════════════
+   DELAY SUMMARY CARDS
+═══════════════════════════════════════ */
+.delay-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.delay-sum-card{display:flex;align-items:flex-start;gap:12px;padding:14px;border-radius:var(--r10);border:1px solid}
+.delay-sum-critical{background:rgba(239,68,68,.04);border-color:rgba(239,68,68,.25)}
+.delay-sum-warn{background:rgba(245,158,11,.04);border-color:rgba(245,158,11,.2)}
+.delay-sum-good{background:rgba(34,197,94,.04);border-color:rgba(34,197,94,.2)}
+.ds-icon{font-size:20px;flex-shrink:0}
+.ds-body{flex:1}
+.ds-title{font-size:11px;font-weight:600;color:var(--t0);margin-bottom:3px}
+.ds-meta{font-size:9px;color:var(--t3);font-family:var(--mono);margin-bottom:5px}
+.ds-delay{font-size:10px;font-weight:600;font-family:var(--mono)}
+.ds-badge{font-size:8px;padding:2px 8px;border-radius:10px;border:1px solid;font-weight:600;font-family:var(--mono);white-space:nowrap;height:fit-content;letter-spacing:.06em}
+
+/* ═══════════════════════════════════════
+   CRITICAL PATH FLOW
+═══════════════════════════════════════ */
+.cp-flow{padding:16px;display:flex;flex-direction:column}
+.cp-step{display:flex;gap:14px;align-items:flex-start;padding:10px 0;position:relative}
+.cp-step::after{content:'';position:absolute;left:12px;top:36px;bottom:-10px;width:2px;background:var(--b0);z-index:0}
+.cp-blocker::after{background:linear-gradient(180deg,rgba(239,68,68,.5),rgba(245,158,11,.3))}
+.cp-step:last-child::after{display:none}
+.cp-step-num{width:26px;height:26px;min-width:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:var(--mono);border:1.5px solid;flex-shrink:0;z-index:1}
+.cp-done .cp-step-num{background:rgba(34,197,94,.15);color:var(--green-xl);border-color:rgba(34,197,94,.35)}
+.cp-step-body{flex:1;padding-bottom:4px}
+.cp-step-badge{margin-bottom:4px}
+.cp-step-title{font-size:12px;font-weight:600;color:var(--t0);margin-bottom:3px}
+.cp-step-meta{font-size:9px;color:var(--t3);font-family:var(--mono)}
+
+/* ═══════════════════════════════════════
+   HEALTH SCORE BARS
+═══════════════════════════════════════ */
+.hs-item{display:flex;align-items:center;gap:8px}
+.hs-label{font-size:10px;color:var(--t2);min-width:145px}
+.hs-bar-wrap{flex:1;height:5px;background:var(--s3);border-radius:3px;overflow:hidden}
+.hs-bar{height:100%;border-radius:3px;transition:width 1.3s cubic-bezier(.4,0,.2,1)}
+.hs-val{font-size:10px;font-weight:600;font-family:var(--mono);min-width:60px;text-align:right}
+
+/* ═══════════════════════════════════════
+   PTG SCENARIOS
+═══════════════════════════════════════ */
+.ptg-scenarios{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ptg-scenario-card{padding:16px;border-radius:var(--r10);border:1px solid;display:flex;flex-direction:column;gap:6px}
+.ptg-best{background:rgba(34,197,94,.05);border-color:rgba(34,197,94,.25)}
+.ptg-moderate{background:rgba(245,158,11,.05);border-color:rgba(245,158,11,.2)}
+.ptg-risk{background:rgba(239,68,68,.05);border-color:rgba(239,68,68,.2)}
+.ptg-sc-icon{font-size:20px}
+.ptg-sc-label{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--t3);font-family:var(--mono)}
+.ptg-sc-date{font-size:1.15rem;font-weight:800;letter-spacing:-.02em}
+.ptg-best .ptg-sc-date{color:var(--green-xl)}
+.ptg-moderate .ptg-sc-date{color:var(--amber-xl)}
+.ptg-risk .ptg-sc-date{color:var(--red-xl)}
+.ptg-sc-desc{font-size:10px;color:var(--t2);line-height:1.5;font-family:var(--mono)}
+.ptg-sc-slip{font-size:10px;font-weight:600;font-family:var(--mono);color:var(--t3)}
+
+/* ═══════════════════════════════════════
+   PTG STEPS
+═══════════════════════════════════════ */
+.ptg-steps{display:flex;flex-direction:column;padding:8px 16px 16px}
+.ptg-step{display:flex;gap:16px;align-items:flex-start;padding:12px 0;position:relative}
+.ptg-step-left{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.ptg-step-circle{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:var(--mono);border:1.5px solid;z-index:1;flex-shrink:0}
+.ptg-step-circle.done{background:rgba(34,197,94,.15);color:var(--green-xl);border-color:rgba(34,197,94,.35)}
+.ptg-step-circle.active{background:rgba(239,68,68,.15);color:var(--red-xl);border-color:rgba(239,68,68,.4);animation:blink 1.3s ease-in-out infinite}
+.ptg-step-circle.next{background:rgba(245,158,11,.1);color:var(--amber-xl);border-color:rgba(245,158,11,.3)}
+.ptg-step-line{width:2px;flex:1;min-height:20px;margin-top:4px}
+.ptg-step-line.done{background:var(--green-l);opacity:.4}
+.ptg-step-line.active{background:linear-gradient(180deg,var(--red-l),var(--amber-l));opacity:.5}
+.ptg-step-line.next{background:var(--b0)}
+.ptg-step-right{flex:1;padding-bottom:8px}
+.ptg-step-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.ptg-step-tag{font-size:9px;padding:2px 8px;border-radius:10px;font-weight:600;font-family:var(--mono);border:1px solid;letter-spacing:.06em}
+.ptg-step-time{font-size:9px;color:var(--t3);font-family:var(--mono)}
+.ptg-step-title{font-size:13px;font-weight:700;color:var(--t0);margin-bottom:5px;line-height:1.3}
+.ptg-step-desc{font-size:11px;color:var(--t2);line-height:1.6}
+.ptg-step-actions{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.ptg-action{font-size:9px;font-family:var(--mono);padding:3px 10px;border-radius:20px;border:1px solid}
+.ptg-action-done{background:var(--green-dim);color:var(--green-xl);border-color:rgba(34,197,94,.2)}
+.ptg-action-todo{background:var(--s2);color:var(--t2);border-color:var(--b0);display:flex;align-items:flex-start;width:100%;border-radius:var(--r6);padding:5px 10px;margin-bottom:3px;font-size:10px;line-height:1.4}
+
+@media(max-width:900px){
+  .delay-summary-grid,.ptg-scenarios{grid-template-columns:1fr}
+}
+
+/* ═══════════════════════════════════════
+   TAB NAVIGATION
+═══════════════════════════════════════ */
+#tab-nav{
+  display:flex;gap:0;
+  background:rgba(8,12,24,.95);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--b0);
+  padding:0 20px;
+  position:sticky;top:103px;z-index:85;
+}
+.tab-btn{
+  display:flex;align-items:center;gap:7px;
+  font-family:var(--font);font-size:12px;font-weight:500;
+  padding:12px 20px;border:none;background:transparent;
+  color:var(--t3);cursor:pointer;border-bottom:2px solid transparent;
+  transition:all .2s;letter-spacing:.01em;
+  position:relative;top:1px;
+}
+.tab-btn:hover{color:var(--t1);background:rgba(255,255,255,.03)}
+.tab-btn.active{color:var(--teal-xl);border-bottom-color:var(--teal-l);background:transparent}
+.tab-icon{font-size:13px}
+.tab-panel{animation:fadeIn .25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ═══════════════════════════════════════
+   GANTT TAB HEADER
+═══════════════════════════════════════ */
+.gantt-tab-header{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  flex-wrap:wrap;padding:16px 0 12px;margin-bottom:12px;
+  border-bottom:1px solid var(--b0);
+}
+.gantt-tab-title{font-size:1.1rem;font-weight:800;letter-spacing:-.02em;color:var(--t0)}
+.gantt-tab-sub{font-size:10px;color:var(--t3);font-family:var(--mono);margin-top:2px}
+
+/* ═══════════════════════════════════════
+   GANTT PHASE SUMMARY ROWS
+═══════════════════════════════════════ */
+.gantt-phase-row{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 16px;border-bottom:1px solid rgba(28,45,71,.5);
+}
+.gantt-phase-row:last-child{border-bottom:none}
+.gpr-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.gpr-name{font-size:11px;font-weight:500;color:var(--t1);min-width:90px}
+.gpr-tasks{font-size:9px;color:var(--t3);font-family:var(--mono);min-width:48px}
+.gpr-bar-wrap{flex:1;height:5px;background:var(--s3);border-radius:3px;overflow:hidden}
+.gpr-bar{height:100%;border-radius:3px;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.gpr-pct{font-size:11px;font-weight:700;font-family:var(--mono);min-width:36px;text-align:right}
+.gpr-dates{font-size:9px;color:var(--t3);font-family:var(--mono);min-width:90px;text-align:right}
+
+/* ═══════════════════════════════════════
+   SORT TOGGLE
+═══════════════════════════════════════ */
+.sort-btns{display:flex;gap:4px}
+.sort-btn{
+  font-size:9px;font-family:var(--mono);padding:3px 8px;border-radius:4px;
+  border:1px solid var(--b0);background:transparent;color:var(--t3);cursor:pointer;transition:all .2s;
+}
+.sort-btn.active{background:var(--teal-dim);border-color:var(--teal-l);color:var(--teal-xl)}
+
+/* ═══════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════ */
+footer{
+  padding:12px 20px;border-top:1px solid var(--b0);
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;
+  font-size:9px;color:var(--t3);font-family:var(--mono);letter-spacing:.07em;
+  background:rgba(5,7,15,.8);
+}
+
+@media(max-width:1100px){
+  .kpi-strip{grid-template-columns:repeat(3,1fr)}
+  .col-32,.col-23,.col-21,.col-2,.col-3{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+  .kpi-strip{grid-template-columns:repeat(2,1fr)}
+  main,#site-header,#filter-bar{padding-left:12px;padding-right:12px}
+  .blocker-grid{grid-template-columns:1fr}
+  .drawer-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<!-- TOOLTIP -->
+<div id="tt">
+  <div class="tt-title" id="tt-title"></div>
+  <div id="tt-body"></div>
+</div>
+
+<!-- ═══ HEADER ═══ -->
+<header id="site-header">
+  <div class="hdr-brand">
+    <div class="hdr-eyebrow">● TMS-CB · SIT Cutover Command Center</div>
+    <h1 class="hdr-title">FEB 2027 IM 2.2 CB &nbsp;<em>SIT Cutover</em></h1>
+    <div class="hdr-meta">SAP TMS Implementation · Cash & Banking · 19 Tasks · Apr 20 – Apr 30 2026 (baseline)</div>
+  </div>
+  <div class="hdr-right">
+    <div class="status-chip chip-red"><span class="pulse-dot"></span>1 CRITICAL BLOCKER</div>
+    <div class="status-chip chip-green">84% COMPLETE</div>
+    <div class="hdr-refresh">Last refreshed: May 9, 2026 · 09:00</div>
+  </div>
+</header>
+
+<!-- ═══ FILTER BAR ═══ -->
+<div id="filter-bar">
+  <select class="filter-select" id="f-phase" aria-label="Filter by phase">
+    <option value="">All Phases</option>
+    <option value="Milestone">Milestone</option>
+    <option value="Pre-Cutover">Pre-Cutover</option>
+    <option value="Cutover">Cutover</option>
+    <option value="Post-Cutover">Post-Cutover</option>
+  </select>
+  <select class="filter-select" id="f-status" aria-label="Filter by status">
+    <option value="">All Statuses</option>
+    <option value="Complete">Complete</option>
+    <option value="Issue">Issue</option>
+    <option value="Sent">Sent</option>
+    <option value="Planned">Planned</option>
+  </select>
+  <select class="filter-select" id="f-team" aria-label="Filter by team">
+    <option value="">All Teams</option>
+    <option value="TMS Project - Config">TMS Config</option>
+    <option value="Cutover team">Cutover team</option>
+    <option value="TMS Project - SQA">TMS SQA</option>
+    <option value="TMS Project - Build">TMS Build</option>
+  </select>
+  <select class="filter-select" id="f-owner" aria-label="Filter by owner">
+    <option value="">All Owners</option>
+    <option value="Nikhil Eppalapally">Nikhil</option>
+    <option value="Nandini Ray Nag">Nandini</option>
+    <option value="Preeti Saxena">Preeti</option>
+    <option value="Divyanshi Bajpai">Divyanshi</option>
+    <option value="Sarath Babu Siripurapu">Sarath</option>
+    <option value="Noor Shaik">Noor</option>
+  </select>
+  <button class="filter-toggle" id="f-cp" onclick="toggleCP()" aria-label="Toggle critical path">
+    <span class="tog-icon">⬡</span> Critical Path Only
+  </button>
+  <button class="filter-reset" onclick="resetFilters()" aria-label="Reset all filters">↺ Reset</button>
+  <div class="filter-counter">Showing <span id="task-count">19</span> tasks</div>
+</div>
+
+<!-- ═══ TAB NAVIGATION ═══ -->
+<div id="tab-nav">
+  <button class="tab-btn active" id="tab-dashboard" onclick="switchTab('dashboard')">
+    <span class="tab-icon">📊</span> Dashboard
+  </button>
+  <button class="tab-btn" id="tab-gantt" onclick="switchTab('gantt')">
+    <span class="tab-icon">📅</span> Gantt Chart
+  </button>
+  <button class="tab-btn" id="tab-ptg" onclick="switchTab('ptg')">
+    <span class="tab-icon">🟢</span> Path to Green &amp; Risk Mitigation Plan
+  </button>
+</div>
+
+<main>
+
+<!-- ═══ KPI STRIP ═══ -->
+<div class="kpi-strip">
+  <div class="kpi-tile k-green" id="kpi-complete" onclick="openKpiModal('complete')">
+    <div class="kpi-icon">✅</div>
+    <div class="kpi-label">Overall Complete</div>
+    <div class="kpi-val" style="color:var(--green-xl)" id="kv-complete">84%</div>
+    <div class="kpi-sub" id="ks-complete">16 of 19 tasks</div>
+    <div class="kpi-bar-wrap"><div class="kpi-bar" id="kb-complete" style="width:84%;background:var(--green-l)"></div></div>
+    <button class="kpi-ask-btn" onclick="event.stopPropagation();openKpiModal('complete')"><span class="ask-spark">✦</span> Ask Me</button>
+  </div>
+  <div class="kpi-tile k-teal" id="kpi-cp" onclick="openKpiModal('cp')">
+    <div class="kpi-icon">🔗</div>
+    <div class="kpi-label">Critical Path</div>
+    <div class="kpi-val" style="color:var(--teal-xl)" id="kv-cp">56%</div>
+    <div class="kpi-sub" id="ks-cp">5 of 9 CP tasks done</div>
+    <div class="kpi-bar-wrap"><div class="kpi-bar" id="kb-cp" style="width:56%;background:var(--teal-l)"></div></div>
+    <button class="kpi-ask-btn" onclick="event.stopPropagation();openKpiModal('cp')"><span class="ask-spark">✦</span> Ask Me</button>
+  </div>
+  <div class="kpi-tile k-amber" id="kpi-slip" onclick="openKpiModal('slip')">
+    <div class="kpi-icon">⚠</div>
+    <div class="kpi-label">Task Slippage</div>
+    <div class="kpi-val" style="color:var(--amber-xl)" id="kv-slip">21%</div>
+    <div class="kpi-sub" id="ks-slip">4 slipped (3 open + 1 late start)</div>
+    <div class="kpi-bar-wrap"><div class="kpi-bar" id="kb-slip" style="width:21%;background:var(--amber-l)"></div></div>
+    <button class="kpi-ask-btn" onclick="event.stopPropagation();openKpiModal('slip')"><span class="ask-spark">✦</span> Ask Me</button>
+  </div>
+  <div class="kpi-tile k-red" id="kpi-sched" onclick="openKpiModal('sched')">
+    <div class="kpi-icon">⏱</div>
+    <div class="kpi-label">Schedule Slip</div>
+    <div class="kpi-val" style="color:var(--red-xl)" id="kv-sched">+9d</div>
+    <div class="kpi-sub" id="ks-sched">201h beyond Apr 30</div>
+    <div class="kpi-bar-wrap"><div class="kpi-bar" id="kb-sched" style="width:100%;background:var(--red-l)"></div></div>
+    <button class="kpi-ask-btn" onclick="event.stopPropagation();openKpiModal('sched')"><span class="ask-spark">✦</span> Ask Me</button>
+  </div>
+  <div class="kpi-tile k-red" id="kpi-block" onclick="openKpiModal('block')">
+    <div class="kpi-icon">⛔</div>
+    <div class="kpi-label">Active Blockers</div>
+    <div class="kpi-val" style="color:var(--red-xl)" id="kv-block">1</div>
+    <div class="kpi-sub" id="ks-block">CAMT/SFTP public key defect</div>
+    <div class="kpi-bar-wrap"><div class="kpi-bar" id="kb-block" style="width:100%;background:var(--red-l)"></div></div>
+    <button class="kpi-ask-btn" onclick="event.stopPropagation();openKpiModal('block')"><span class="ask-spark">✦</span> Ask Me</button>
+  </div>
+  <div class="kpi-tile k-blue" id="kpi-eta" onclick="openKpiModal('eta')">
+    <div class="kpi-icon">🎯</div>
+    <div class="kpi-label">Est. Completion</div>
+    <div class="kpi-val" style="color:var(--red-xl);font-size:1.4rem" id="kv-eta">May 9</div>
+    <div class="kpi-sub" id="ks-eta">17:06 · if resolved today</div>
+    <div class="kpi-bar-wrap"><div class="kpi-bar" id="kb-eta" style="width:65%;background:var(--blue-l)"></div></div>
+    <button class="kpi-ask-btn" onclick="event.stopPropagation();openKpiModal('eta')"><span class="ask-spark">✦</span> Ask Me</button>
+  </div>
+</div>
+
+<div id="panel-dashboard" class="tab-panel">
+
+<!-- ═══ SMART INSIGHTS ═══ -->
+<div class="insight-panel" style="margin-bottom:14px">
+  <div class="insight-head">
+    <div class="insight-icon">✦</div>
+    <div>
+      <div class="insight-title">Executive Summary</div>
+      <div class="insight-subtitle">FEB 2027 IM 2.2 CB SIT Cutover · Live snapshot · May 9, 2026</div>
+    </div>
+  </div>
+  <div class="insight-body" id="insight-body"></div>
+</div>
+
+<!-- ═══ ROW 2: GAUGE + DONUT + DELAY + TEAM ═══ -->
+<div class="row col-2">
+
+  <!-- Gauge + Phase bars -->
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title">Completion Gauge</span>
+      <span class="badge b-warning">84% · Delayed</span>
+    </div>
+    <div class="gauge-section">
+      <div class="gauge-svg-wrap">
+        <svg viewBox="0 0 210 125" fill="none">
+          <defs>
+            <linearGradient id="g-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#16a34a"/>
+              <stop offset="60%" stop-color="#22c55e"/>
+              <stop offset="100%" stop-color="#06b6d4"/>
+            </linearGradient>
+          </defs>
+          <!-- Track -->
+          <path d="M 18 112 A 87 87 0 0 1 192 112" stroke="#162035" stroke-width="18" stroke-linecap="round"/>
+          <!-- Fill — 84% of π radians -->
+          <path d="M 18 112 A 87 87 0 0 1 192 112" stroke="url(#g-grad)" stroke-width="18" stroke-linecap="round"
+            stroke-dasharray="273.5" stroke-dashoffset="43.8" id="gauge-arc"
+            style="transition:stroke-dashoffset 1.3s cubic-bezier(.4,0,.2,1)"/>
+          <!-- Tick marks -->
+          <line x1="105" y1="26" x2="105" y2="38" stroke="#1c2d47" stroke-width="2"/>
+          <line x1="25" y1="80" x2="34" y2="84" stroke="#1c2d47" stroke-width="2"/>
+          <line x1="185" y1="80" x2="176" y2="84" stroke="#1c2d47" stroke-width="2"/>
+          <!-- Scale labels -->
+          <text x="14" y="126" font-size="8" fill="#4a6080" font-family="IBM Plex Mono">0%</text>
+          <text x="93" y="20" font-size="8" fill="#4a6080" font-family="IBM Plex Mono">50%</text>
+          <text x="178" y="126" font-size="8" fill="#4a6080" font-family="IBM Plex Mono">100%</text>
+        </svg>
+        <div class="gauge-center">
+          <div class="gauge-pct" style="color:var(--green-xl)" id="gauge-pct-val">84%</div>
+          <div class="gauge-count" id="gauge-count-val">16 / 19 complete</div>
+        </div>
+      </div>
+      <div class="gauge-label">SIT Cutover Health</div>
+      <div class="gauge-status" style="color:var(--amber-xl)">⚠ Delayed · 1 Active Blocker</div>
+    </div>
+    <div class="phase-bars">
+      <div class="pb-item">
+        <div class="pb-row"><span class="pb-name">Pre-Cutover</span><span class="pb-pct" style="color:var(--green-xl)">100%</span></div>
+        <div class="pb-track"><div class="pb-fill" style="width:0%;background:linear-gradient(90deg,var(--green),rgba(34,197,94,.6))" data-w="100"></div></div>
+        <div class="pb-sub">8/8 tasks · Apr 20–24 ✓</div>
+      </div>
+      <div class="pb-item">
+        <div class="pb-row"><span class="pb-name">Cutover</span><span class="pb-pct" style="color:var(--green-xl)">100%</span></div>
+        <div class="pb-track"><div class="pb-fill" style="width:0%;background:linear-gradient(90deg,var(--green),rgba(34,197,94,.6))" data-w="100"></div></div>
+        <div class="pb-sub">4/4 tasks · Apr 23 ✓</div>
+      </div>
+      <div class="pb-item">
+        <div class="pb-row"><span class="pb-name">Post-Cutover</span><span class="pb-pct" style="color:var(--amber-xl)">57%</span></div>
+        <div class="pb-track"><div class="pb-fill" style="width:0%;background:linear-gradient(90deg,var(--amber-l),rgba(245,158,11,.5))" data-w="57"></div></div>
+        <div class="pb-sub">4/7 tasks · 1 blocker · 2 open</div>
+      </div>
+      <div class="pb-item">
+        <div class="pb-row"><span class="pb-name">Milestones</span><span class="pb-pct" style="color:var(--amber-xl)">75%</span></div>
+        <div class="pb-track"><div class="pb-fill" style="width:0%;background:linear-gradient(90deg,var(--teal-l),rgba(6,182,212,.5))" data-w="75"></div></div>
+        <div class="pb-sub">3/4 milestones · Final pending</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2x2 inner grid for Donut + Delay + Team + Path -->
+  <div style="display:flex;flex-direction:column;gap:12px">
+
+    <!-- Donut -->
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Status Distribution</span>
+        <span class="caption">Click segment to filter</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;padding:14px 16px">
+        <div style="position:relative;width:100px;height:100px;flex-shrink:0">
+          <canvas id="donutChart" width="100" height="100"></canvas>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">
+            <span style="font-size:1.4rem;font-weight:800;letter-spacing:-.03em;color:var(--t0)" id="donut-center">19</span>
+            <span style="font-size:8px;color:var(--t3);font-family:var(--mono)">total</span>
+          </div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:7px" id="donut-legend">
+          <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="filterByStatus('Complete')" data-status="Complete">
+            <span style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--t1)"><span style="width:8px;height:8px;border-radius:2px;background:var(--green-l);display:inline-block"></span>Complete</span>
+            <span style="font-size:12px;font-weight:700;color:var(--green-xl);font-family:var(--mono)">16 (84%)</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="filterByStatus('Issue')" data-status="Issue">
+            <span style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--t1)"><span style="width:8px;height:8px;border-radius:2px;background:var(--red-l);display:inline-block"></span>Issue</span>
+            <span style="font-size:12px;font-weight:700;color:var(--red-xl);font-family:var(--mono)">1 (5%)</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="filterByStatus('Sent')" data-status="Sent">
+            <span style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--t1)"><span style="width:8px;height:8px;border-radius:2px;background:var(--blue-l);display:inline-block"></span>Sent</span>
+            <span style="font-size:12px;font-weight:700;color:var(--blue-xl);font-family:var(--mono)">1 (5%)</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="filterByStatus('Planned')" data-status="Planned">
+            <span style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--t1)"><span style="width:8px;height:8px;border-radius:2px;background:var(--t3);display:inline-block"></span>Planned</span>
+            <span style="font-size:12px;font-weight:700;color:var(--t2);font-family:var(--mono)">1 (5%)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resource workload -->
+    <div class="card">
+      <div class="card-head"><span class="card-title">Resource Workload</span></div>
+      <div class="res-list">
+        <div class="res-item">
+          <div class="res-av" style="background:rgba(6,182,212,.15);color:var(--teal-xl)">NE</div>
+          <div class="res-info"><div class="res-name">Nikhil Eppalapally</div><div class="res-role">TMS Config</div></div>
+          <div class="res-bar-wrap"><div class="res-bar" style="width:0%" data-w="100"></div></div>
+          <div class="res-count" style="color:var(--teal-xl)">12</div>
+          <span class="spof-badge">SPOF</span>
+        </div>
+        <div class="res-item">
+          <div class="res-av" style="background:rgba(168,85,247,.15);color:var(--purple-l)">NR</div>
+          <div class="res-info"><div class="res-name">Nandini Ray Nag</div><div class="res-role">Cutover team</div></div>
+          <div class="res-bar-wrap"><div class="res-bar" style="width:0%;background:var(--purple-l)" data-w="25"></div></div>
+          <div class="res-count" style="color:var(--purple-l)">4</div>
+        </div>
+        <div class="res-item">
+          <div class="res-av" style="background:rgba(239,68,68,.12);color:var(--red-xl)">PS</div>
+          <div class="res-info"><div class="res-name">Preeti Saxena</div><div class="res-role">TMS Config · Blocker owner</div></div>
+          <div class="res-bar-wrap"><div class="res-bar" style="width:0%;background:var(--red-l)" data-w="8"></div></div>
+          <div class="res-count" style="color:var(--red-xl)">1</div>
+        </div>
+        <div class="res-item">
+          <div class="res-av" style="background:rgba(59,130,246,.12);color:var(--blue-xl)">DB</div>
+          <div class="res-info"><div class="res-name">Divyanshi Bajpai</div><div class="res-role">TMS SQA</div></div>
+          <div class="res-bar-wrap"><div class="res-bar" style="width:0%;background:var(--blue-l)" data-w="8"></div></div>
+          <div class="res-count" style="color:var(--blue-xl)">1</div>
+        </div>
+        <div class="res-item">
+          <div class="res-av" style="background:rgba(34,197,94,.1);color:var(--green-xl)">SB</div>
+          <div class="res-info"><div class="res-name">Sarath Babu</div><div class="res-role">TMS Build</div></div>
+          <div class="res-bar-wrap"><div class="res-bar" style="width:0%;background:var(--green-l)" data-w="8"></div></div>
+          <div class="res-count" style="color:var(--green-xl)">1</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SECTION: DELAY ANALYSIS
+═══════════════════════════════════════ -->
+<div class="section-divider">
+  <span class="section-divider-icon">⏱</span>
+  <span class="section-divider-title">Delay Analysis</span>
+  <span class="section-divider-sub">Planned vs Actual — task-level variance from baseline</span>
+</div>
+<div class="row col-2" style="margin-bottom:12px">
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title">Delay vs Baseline (Hours)</span>
+      <div class="sort-btns">
+        <button class="sort-btn active" onclick="setSortMode('delay',this)">By Delay</button>
+        <button class="sort-btn" onclick="setSortMode('phase',this)">By Phase</button>
+        <button class="sort-btn" onclick="setSortMode('id',this)">By ID</button>
+      </div>
+    </div>
+    <div class="card-body" style="padding-bottom:8px">
+      <canvas id="delayChart" height="180"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="card-title">Team Workload — Planned vs Completed Hours</span></div>
+    <div class="card-body" style="padding-bottom:8px">
+      <canvas id="teamChart" height="180"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Delay Summary Cards -->
+<div class="delay-summary-grid" style="margin-bottom:20px">
+  <div class="delay-sum-card delay-sum-critical">
+    <div class="ds-icon">⛔</div>
+    <div class="ds-body">
+      <div class="ds-title">Task #3220 — S/4 & High Radius Connectivity</div>
+      <div class="ds-meta">Owner: Preeti Saxena · Post-Cutover · Critical Path</div>
+      <div class="ds-delay" style="color:var(--red-xl)">+201 hours overdue · Single root cause of all downstream delay</div>
+    </div>
+    <div class="ds-badge" style="background:var(--red-dim);color:var(--red-xl);border-color:rgba(239,68,68,.3)">CRITICAL</div>
+  </div>
+  <div class="delay-sum-card delay-sum-warn">
+    <div class="ds-icon">⏳</div>
+    <div class="ds-body">
+      <div class="ds-title">Task #3193 — Master Data Validation</div>
+      <div class="ds-meta">Owner: Nikhil Eppalapally · Post-Cutover</div>
+      <div class="ds-delay" style="color:var(--amber-xl)">Started +23.5 hours late · Now complete ✓</div>
+    </div>
+    <div class="ds-badge" style="background:var(--amber-dim);color:var(--amber-xl);border-color:rgba(245,158,11,.3)">RECOVERED</div>
+  </div>
+  <div class="delay-sum-card delay-sum-good">
+    <div class="ds-icon">⚡</div>
+    <div class="ds-body">
+      <div class="ds-title">Task #3143 — Validate Transport List</div>
+      <div class="ds-meta">Owner: Sarath Babu · Pre-Cutover · TMS Build</div>
+      <div class="ds-delay" style="color:var(--green-xl)">Finished 40 hours early — positive buffer signal</div>
+    </div>
+    <div class="ds-badge" style="background:var(--green-dim);color:var(--green-xl);border-color:rgba(34,197,94,.3)">EARLY ✓</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SECTION: OVERALL HEALTH SCORE
+═══════════════════════════════════════ -->
+<div class="section-divider">
+  <span class="section-divider-icon">💊</span>
+  <span class="section-divider-title">Overall Health Score</span>
+  <span class="section-divider-sub">Composite scoring across 6 dimensions · 58/100 · At Risk</span>
+</div>
+<div class="row col-2" style="margin-bottom:20px">
+
+  <!-- Health ring + score -->
+  <div class="card">
+    <div class="card-head"><span class="card-title">Health Score Breakdown</span><span class="badge b-warning">58 / 100 · AT RISK</span></div>
+    <div style="display:flex;align-items:center;gap:24px;padding:20px">
+      <div style="position:relative;width:140px;height:140px;flex-shrink:0">
+        <svg viewBox="0 0 140 140" width="140" height="140">
+          <circle cx="70" cy="70" r="54" fill="none" stroke="#162035" stroke-width="12"/>
+          <circle cx="70" cy="70" r="54" fill="none" stroke="#f59e0b" stroke-width="12"
+            stroke-dasharray="339.3" stroke-dashoffset="142.5"
+            stroke-linecap="round" transform="rotate(-90 70 70)"/>
+        </svg>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div style="font-size:2rem;font-weight:800;color:var(--amber-xl);letter-spacing:-.04em;line-height:1">58</div>
+          <div style="font-size:9px;color:var(--t3);font-family:var(--mono)">/100</div>
+        </div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:10px">
+        <div class="hs-item">
+          <div class="hs-label">Schedule Adherence</div>
+          <div class="hs-bar-wrap"><div class="hs-bar" style="width:21%;background:var(--red-l)"></div></div>
+          <div class="hs-val" style="color:var(--red-xl)">21%</div>
+        </div>
+        <div class="hs-item">
+          <div class="hs-label">Tasks On Time</div>
+          <div class="hs-bar-wrap"><div class="hs-bar" style="width:79%;background:var(--green-l)"></div></div>
+          <div class="hs-val" style="color:var(--green-xl)">79%</div>
+        </div>
+        <div class="hs-item">
+          <div class="hs-label">Critical Path Progress</div>
+          <div class="hs-bar-wrap"><div class="hs-bar" style="width:56%;background:var(--teal-l)"></div></div>
+          <div class="hs-val" style="color:var(--teal-xl)">56%</div>
+        </div>
+        <div class="hs-item">
+          <div class="hs-label">Blocker Severity</div>
+          <div class="hs-bar-wrap"><div class="hs-bar" style="width:100%;background:var(--red-l)"></div></div>
+          <div class="hs-val" style="color:var(--red-xl)">Critical</div>
+        </div>
+        <div class="hs-item">
+          <div class="hs-label">Resource Concentration</div>
+          <div class="hs-bar-wrap"><div class="hs-bar" style="width:63%;background:var(--amber-l)"></div></div>
+          <div class="hs-val" style="color:var(--amber-xl)">High (63%)</div>
+        </div>
+        <div class="hs-item">
+          <div class="hs-label">Phase Completion</div>
+          <div class="hs-bar-wrap"><div class="hs-bar" style="width:84%;background:var(--green-l)"></div></div>
+          <div class="hs-val" style="color:var(--green-xl)">84%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Health score radar chart -->
+  <div class="card">
+    <div class="card-head"><span class="card-title">Risk Radar — 6 Dimensions</span><span class="caption">Higher = worse risk</span></div>
+    <div class="card-body" style="padding-bottom:8px">
+      <canvas id="radarChart" height="220"></canvas>
+    </div>
+    <div style="padding:0 16px 14px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      <div style="background:var(--s2);border-radius:var(--r6);padding:8px 10px;border:1px solid var(--b0)">
+        <div style="font-size:9px;color:var(--t3);font-family:var(--mono);margin-bottom:3px">PENALISED BY</div>
+        <div style="font-size:10px;color:var(--red-xl)">Active blocker (−30pts)</div>
+        <div style="font-size:10px;color:var(--amber-xl)">Slippage 21% (−10pts)</div>
+        <div style="font-size:10px;color:var(--amber-xl)">SPOF resource (−5pts)</div>
+      </div>
+      <div style="background:var(--s2);border-radius:var(--r6);padding:8px 10px;border:1px solid var(--b0)">
+        <div style="font-size:9px;color:var(--t3);font-family:var(--mono);margin-bottom:3px">BOOSTED BY</div>
+        <div style="font-size:10px;color:var(--green-xl)">2 phases complete ✓</div>
+        <div style="font-size:10px;color:var(--green-xl)">84% task completion</div>
+        <div style="font-size:10px;color:var(--green-xl)">Transport −40h early</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PATH TO GREEN TEASER (links to dedicated tab) ═══ -->
+
+<!-- ═══ BLOCKED TASKS PANEL ═══ -->
+<div class="card" style="margin-bottom:12px">
+  <div class="card-head">
+    <span class="card-title">⛔ Blocked, At-Risk & Open Tasks</span>
+    <span class="badge b-issue">3 NEED ACTION</span>
+  </div>
+  <div class="blocker-grid">
+
+    <!-- Task 3220 — Critical -->
+    <div class="blocker-card sev-critical" id="bc-3220">
+      <div class="bc-icon">⛔</div>
+      <div class="bc-title">CAMT File Transmission Failure to High Radius — Missing SFTP Public Key</div>
+      <div class="bc-id">Task #3220 · TMS Project - Config · WBS: ...6.1.4 · Blocker Defect Raised</div>
+      <div class="bc-meta">
+        Owner: Preeti Saxena<br>
+        Root Cause: CAMT files failing during transmission to High Radius<br>
+        Reason: Missing public key on High Radius SFTP connection<br>
+        Blocker defect raised — pending resolution<br>
+        Cascades → Task 3221 (Send Statement to High Radius) → Task 3200
+      </div>
+      <div class="bc-delay" style="color:var(--red-xl)">+201 hours overdue</div>
+      <div class="bc-recovery" style="border-color:var(--red-l)">
+        🔧 <strong>Action:</strong> Add the missing public key to the High Radius SFTP connection. Resolve blocker defect. Once fixed, re-run CAMT file transmission and validate end-to-end delivery to High Radius. SIT can proceed in other areas not impacted by this issue.
+      </div>
+      <button class="bc-btn btn-resolve" onclick="markResolved('bc-3220',this)">✓ Mark Resolved</button>
+    </div>
+
+    <!-- Task 3221 — High -->
+    <div class="blocker-card sev-high" id="bc-3221">
+      <div class="bc-icon">⏳</div>
+      <div class="bc-title">Smoke Testing — Scenario 2: Send Statement to High Radius</div>
+      <div class="bc-id">Task #3221 · TMS Project - Config · WBS: ...6.1.6</div>
+      <div class="bc-meta">
+        Owner: Nikhil Eppalapally<br>
+        Planned: Apr 29, 13:12 → Apr 30, 10:12<br>
+        Blocked by: Task 3220 (CAMT/SFTP public key defect)<br>
+        Duration: 6 hours
+      </div>
+      <div class="bc-delay" style="color:var(--amber-xl)">Waiting — cannot start until #3220 resolved</div>
+      <div class="bc-recovery" style="border-color:var(--amber-l)">
+        🚀 <strong>Action:</strong> Once SFTP public key is added and CAMT transmission is validated, immediately execute Smoke Test 2 (Send Statement to High Radius). Note: SIT in other areas can proceed independently — this test is isolated to the High Radius SFTP integration.
+      </div>
+      <button class="bc-btn btn-resolve" onclick="markResolved('bc-3221',this)">✓ Mark Resolved</button>
+    </div>
+
+    <!-- Task 3200 — Medium -->
+    <div class="blocker-card sev-medium" id="bc-3200">
+      <div class="bc-icon">🎯</div>
+      <div class="bc-title">Confirm SITCutover Completion & Overall Readiness for SIT</div>
+      <div class="bc-id">Task #3200 · Cutover team · WBS: ...1.1.7</div>
+      <div class="bc-meta">
+        Owner: Nandini Ray Nag<br>
+        Planned: Apr 30, 15:12 → 15:18<br>
+        Blocked by: Post-Cutover gate (all 7 tasks)<br>
+        Final milestone — triggers SIT readiness
+      </div>
+      <div class="bc-delay" style="color:var(--blue-xl)">+9 days beyond baseline — critical path end</div>
+      <div class="bc-recovery" style="border-color:var(--blue-l)">
+        ✅ <strong>Action:</strong> Schedule sign-off meeting for May 9, 17:06 contingent on Smoke Test 2 completion. Prepare SIT readiness report in advance.
+      </div>
+      <button class="bc-btn btn-resolve" onclick="markResolved('bc-3200',this)">✓ Mark Resolved</button>
+    </div>
+  </div>
+
+  <!-- Resolved accordion -->
+  <div class="resolved-accordion">
+    <div class="accordion-head" onclick="toggleAccordion(this)">
+      <span>✅ Resolved Tasks (16 complete)</span>
+      <span class="accordion-arrow">▾</span>
+    </div>
+    <div class="accordion-body">
+      <div class="resolved-list" id="resolved-list"></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end panel-dashboard -->
+<div id="panel-gantt" class="tab-panel" style="display:none">
+  <div class="gantt-tab-header">
+    <div>
+      <div class="gantt-tab-title">Interactive Gantt Chart</div>
+      <div class="gantt-tab-sub">FEB 2027 IM 2.2 CB SIT Cutover · Apr 20 – May 15, 2026 · Click any bar for task details</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span style="display:flex;align-items:center;gap:5px" class="caption"><span style="width:14px;height:4px;background:rgba(74,96,128,.4);border-radius:1px;display:inline-block"></span>Planned baseline</span>
+      <span style="display:flex;align-items:center;gap:5px" class="caption"><span style="width:14px;height:9px;background:var(--green-l);border-radius:2px;display:inline-block"></span>Complete</span>
+      <span style="display:flex;align-items:center;gap:5px" class="caption"><span style="width:14px;height:9px;background:var(--red-l);border-radius:2px;display:inline-block"></span>Issue / Blocker</span>
+      <span style="display:flex;align-items:center;gap:5px" class="caption"><span style="width:14px;height:9px;background:var(--blue-l);opacity:.75;border-radius:2px;display:inline-block"></span>Open / Sent</span>
+      <span style="display:flex;align-items:center;gap:5px" class="caption"><span style="width:14px;height:9px;background:var(--t3);opacity:.5;border-radius:2px;display:inline-block"></span>Planned</span>
+      <span style="display:flex;align-items:center;gap:5px;color:var(--teal-l)" class="caption">- - - Critical Path</span>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="gantt-wrap card-body-0">
+      <table class="gantt-tbl" id="gantt-table">
+        <thead id="gantt-head"></thead>
+        <tbody id="gantt-body"></tbody>
+      </table>
+    </div>
+    <div id="task-drawer">
+      <div class="drawer-head">
+        <span class="drawer-title" id="drawer-title">Task Details</span>
+        <button class="drawer-close" onclick="closeDrawer()">✕</button>
+      </div>
+      <div class="drawer-grid" id="drawer-grid"></div>
+    </div>
+  </div>
+
+  <!-- Gantt legend + phase summary -->
+  <div class="row col-2" style="margin-bottom:14px">
+    <div class="card">
+      <div class="card-head"><span class="card-title">Phase Summary</span></div>
+      <div style="display:flex;flex-direction:column;gap:0">
+        <div class="gantt-phase-row">
+          <div class="gpr-dot" style="background:var(--teal-l)"></div>
+          <div class="gpr-name">Milestone</div>
+          <div class="gpr-tasks">4 tasks</div>
+          <div class="gpr-bar-wrap"><div class="gpr-bar" style="width:75%;background:var(--teal-l)"></div></div>
+          <div class="gpr-pct" style="color:var(--teal-xl)">75%</div>
+          <div class="gpr-dates">Apr 20 – Apr 30</div>
+        </div>
+        <div class="gantt-phase-row">
+          <div class="gpr-dot" style="background:var(--green-l)"></div>
+          <div class="gpr-name">Pre-Cutover</div>
+          <div class="gpr-tasks">7 tasks</div>
+          <div class="gpr-bar-wrap"><div class="gpr-bar" style="width:100%;background:var(--green-l)"></div></div>
+          <div class="gpr-pct" style="color:var(--green-xl)">100%</div>
+          <div class="gpr-dates">Apr 20 – Apr 23</div>
+        </div>
+        <div class="gantt-phase-row">
+          <div class="gpr-dot" style="background:var(--green-l)"></div>
+          <div class="gpr-name">Cutover</div>
+          <div class="gpr-tasks">2 tasks</div>
+          <div class="gpr-bar-wrap"><div class="gpr-bar" style="width:100%;background:var(--green-l)"></div></div>
+          <div class="gpr-pct" style="color:var(--green-xl)">100%</div>
+          <div class="gpr-dates">Apr 23</div>
+        </div>
+        <div class="gantt-phase-row">
+          <div class="gpr-dot" style="background:var(--amber-l)"></div>
+          <div class="gpr-name">Post-Cutover</div>
+          <div class="gpr-tasks">6 tasks</div>
+          <div class="gpr-bar-wrap"><div class="gpr-bar" style="width:57%;background:var(--amber-l)"></div></div>
+          <div class="gpr-pct" style="color:var(--amber-xl)">57%</div>
+          <div class="gpr-dates">Apr 28 – May 9</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="card-title">Critical Path Tracker</span><span class="badge b-cp">9 tasks · 56% done</span></div>
+      <div style="padding:14px 16px;display:flex;flex-direction:column;gap:7px">
+        <div style="font-size:9px;color:var(--t3);font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px">Dependency chain</div>
+        <div style="display:flex;align-items:center;gap:0;flex-wrap:wrap;row-gap:6px" id="cp-chain-vis"></div>
+        <div style="margin-top:10px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+            <span style="font-size:10px;color:var(--t2)">Critical Path Progress</span>
+            <span style="font-size:11px;font-weight:700;color:var(--teal-xl);font-family:var(--mono)">5 / 9 · 56%</span>
+          </div>
+          <div style="height:8px;background:var(--s3);border-radius:4px;overflow:hidden;display:flex">
+            <div style="width:56%;background:linear-gradient(90deg,var(--green-l),var(--teal-l))"></div>
+            <div style="width:5%;background:var(--red-l)"></div>
+            <div style="width:39%;background:var(--s3)"></div>
+          </div>
+          <div style="display:flex;gap:12px;margin-top:5px;flex-wrap:wrap">
+            <span style="font-size:9px;color:var(--green-xl);font-family:var(--mono)">■ 5 complete</span>
+            <span style="font-size:9px;color:var(--red-xl);font-family:var(--mono)">■ 1 blocker</span>
+            <span style="font-size:9px;color:var(--t3);font-family:var(--mono)">■ 3 waiting</span>
+          </div>
+        </div>
+        <div style="margin-top:8px;background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.2);border-radius:var(--r6);padding:9px 12px">
+          <div style="font-size:10px;font-weight:600;color:var(--red-xl);margin-bottom:3px">⛔ Active Blocker on Critical Path</div>
+          <div style="font-size:10px;color:var(--t2);font-family:var(--mono)">Task #3220 — CAMT Transmission Failure (Missing SFTP Public Key)<br>Owner: Preeti Saxena · 201h overdue · Defect raised · Blocks #3221 → #3200</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TAB: DASHBOARD ═══ -->
+<div id="panel-ptg" class="tab-panel" style="display:none">
+
+  <!-- Timeline chart -->
+  <div class="row col-1" style="margin-bottom:14px">
+    <div class="card" style="border-color:rgba(34,197,94,.15)">
+      <div class="card-head" style="border-bottom-color:rgba(34,197,94,.15)">
+        <span class="card-title" style="color:var(--green-xl)">Projected Completion Timeline — 3 Scenarios vs Baseline</span>
+        <span class="caption">Click legend to show/hide · Shaded zone = slip period</span>
+      </div>
+      <div class="card-body" style="padding-bottom:8px">
+        <canvas id="ptgChart" height="140"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CRITICAL PATH ANALYSIS (moved from Dashboard) ── -->
+
+<!-- ═══════════════════════════════════════
+     SECTION: CRITICAL PATH
+═══════════════════════════════════════ -->
+<div class="section-divider">
+  <span class="section-divider-icon">🔗</span>
+  <span class="section-divider-title">Critical Path Analysis</span>
+  <span class="section-divider-sub">9-task dependency chain · 56% complete · 1 active blocker</span>
+</div>
+<div class="row col-1" style="margin-bottom:12px">
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title">Critical Path — End-to-End Dependency Chain</span>
+      <span class="badge b-cp">3139 → 3168 → 3171 → 3172 → 3173 → 3220 → 3221 → 3200</span>
+    </div>
+    <div class="card-body" style="padding:0">
+      <div class="cp-flow">
+
+        <div class="cp-step cp-done">
+          <div class="cp-step-num">1</div>
+          <div class="cp-step-connector"></div>
+          <div class="cp-step-body">
+            <div class="cp-step-badge badge b-complete">✓ Complete</div>
+            <div class="cp-step-title">Greenlight to Begin SIT Cutover</div>
+            <div class="cp-step-meta">Task #3139 · Nandini Ray Nag · Cutover team · 1h · Apr 20</div>
+          </div>
+        </div>
+
+        <div class="cp-step cp-done">
+          <div class="cp-step-num">2</div>
+          <div class="cp-step-connector"></div>
+          <div class="cp-step-body">
+            <div class="cp-step-badge badge b-complete">✓ Complete</div>
+            <div class="cp-step-title">Confirm move into Technical Cutover</div>
+            <div class="cp-step-meta">Task #3168 · Nandini Ray Nag · Cutover team · 0.1h · Apr 23</div>
+          </div>
+        </div>
+
+        <div class="cp-step cp-done">
+          <div class="cp-step-num">3</div>
+          <div class="cp-step-connector"></div>
+          <div class="cp-step-body">
+            <div class="cp-step-badge badge b-complete">✓ Complete</div>
+            <div class="cp-step-title">CnB and PF | Import of Transports for Config</div>
+            <div class="cp-step-meta">Task #3171 · Nikhil Eppalapally · TMS Config · 2h · Apr 23</div>
+          </div>
+        </div>
+
+        <div class="cp-step cp-done">
+          <div class="cp-step-num">4</div>
+          <div class="cp-step-connector"></div>
+          <div class="cp-step-body">
+            <div class="cp-step-badge badge b-complete">✓ Complete</div>
+            <div class="cp-step-title">CnB and PF | Validate Transports — Config</div>
+            <div class="cp-step-meta">Task #3172 · Nikhil Eppalapally · TMS Config · 2h · Apr 23</div>
+          </div>
+        </div>
+
+        <div class="cp-step cp-done">
+          <div class="cp-step-num">5</div>
+          <div class="cp-step-connector"></div>
+          <div class="cp-step-body">
+            <div class="cp-step-badge badge b-complete">✓ Complete</div>
+            <div class="cp-step-title">Confirm completion of Cutover → Post Cutover</div>
+            <div class="cp-step-meta">Task #3173 · Nandini Ray Nag · Cutover team · 0.1h · Apr 23</div>
+          </div>
+        </div>
+
+        <div class="cp-step cp-blocker">
+          <div class="cp-step-num" style="background:rgba(239,68,68,.2);color:var(--red-xl);border-color:rgba(239,68,68,.4)">!</div>
+          <div class="cp-step-connector" style="background:linear-gradient(180deg,var(--red-l),var(--amber-l))"></div>
+          <div class="cp-step-body" style="background:rgba(239,68,68,.04);border-color:rgba(239,68,68,.25);border-radius:var(--r8);padding:10px 14px">
+            <div class="cp-step-badge badge b-issue">⛔ BLOCKER — Issue</div>
+            <div class="cp-step-title" style="color:var(--red-xl)">CAMT File Transmission Failure to High Radius — Missing SFTP Public Key</div>
+            <div class="cp-step-meta" style="color:var(--red-xl);opacity:.8">Task #3220 · Preeti Saxena · TMS Config · 2h · Planned Apr 28 · <strong>201h overdue</strong></div>
+            <div style="margin-top:8px;font-size:10px;color:var(--t2);font-family:var(--mono);background:var(--s2);border-radius:6px;padding:7px 10px;border-left:2px solid var(--red-l)">
+              🔧 Add missing public key to High Radius SFTP connection. Resolve blocker defect. Re-run CAMT file transmission to validate end-to-end delivery. SIT can proceed in other test areas in parallel.
+            </div>
+          </div>
+        </div>
+
+        <div class="cp-step cp-waiting">
+          <div class="cp-step-num" style="background:rgba(59,130,246,.15);color:var(--blue-xl);border-color:rgba(59,130,246,.3)">7</div>
+          <div class="cp-step-connector"></div>
+          <div class="cp-step-body">
+            <div class="cp-step-badge badge b-sent">→ Waiting</div>
+            <div class="cp-step-title">Smoke Testing — Scenario 2</div>
+            <div class="cp-step-meta">Task #3221 · Nikhil Eppalapally · TMS Config · 6h · Unblocked once #3220 resolves</div>
+          </div>
+        </div>
+
+        <div class="cp-step cp-waiting">
+          <div class="cp-step-num" style="background:rgba(74,96,128,.15);color:var(--t2);border-color:rgba(74,96,128,.3)">8</div>
+          <div class="cp-step-connector" style="opacity:0"></div>
+          <div class="cp-step-body">
+            <div class="cp-step-badge badge b-planned">○ Planned</div>
+            <div class="cp-step-title">Confirm SITCutover Completion & Overall Readiness for SIT</div>
+            <div class="cp-step-meta">Task #3200 · Nandini Ray Nag · Cutover team · 0.1h · Final Milestone</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- CP progress bar -->
+      <div style="padding:14px 16px;border-top:1px solid var(--b0);display:flex;align-items:center;gap:14px">
+        <span style="font-size:10px;color:var(--t3);font-family:var(--mono);white-space:nowrap">CP Progress</span>
+        <div style="flex:1;height:8px;background:var(--s3);border-radius:4px;overflow:hidden;position:relative">
+          <div style="width:56%;height:100%;background:linear-gradient(90deg,var(--green-l),var(--teal-l));border-radius:4px"></div>
+          <div style="position:absolute;top:0;left:56%;height:100%;width:8%;background:var(--red-l);opacity:.8"></div>
+        </div>
+        <span style="font-size:11px;font-weight:700;color:var(--teal-xl);font-family:var(--mono);white-space:nowrap">5/9 · 56%</span>
+        <span style="font-size:9px;color:var(--t3);font-family:var(--mono);white-space:nowrap">Fix #3220 → 100%</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <!-- Step-by-step Risk Mitigation Plan -->
+  <div class="card" style="margin-bottom:14px;border-color:rgba(34,197,94,.15)">
+    <div class="card-head" style="border-bottom-color:rgba(34,197,94,.15)">
+      <span class="card-title" style="color:var(--green-xl)">Step-by-Step Risk Mitigation Plan</span>
+      <span class="badge" style="background:rgba(34,197,94,.1);color:var(--green-xl);border:1px solid rgba(34,197,94,.25)">5 steps · 8.1h to close</span>
+    </div>
+    <div class="ptg-steps">
+
+      <div class="ptg-step">
+        <div class="ptg-step-left">
+          <div class="ptg-step-circle done">✓</div>
+          <div class="ptg-step-line done"></div>
+        </div>
+        <div class="ptg-step-right">
+          <div class="ptg-step-header">
+            <span class="ptg-step-tag" style="background:var(--green-dim);color:var(--green-xl);border-color:rgba(34,197,94,.25)">COMPLETE · Phases 1 &amp; 2</span>
+            <span class="ptg-step-time">Apr 20 – Apr 23</span>
+          </div>
+          <div class="ptg-step-title">Pre-Cutover &amp; Cutover Phases — Fully Executed</div>
+          <div class="ptg-step-desc">All 12 tasks across Pre-Cutover and Cutover phases completed on time. Transport validation, Jira/CO readiness, config imports, and all milestone gates are green. Validate Transport List completed 40 hours ahead of schedule.</div>
+          <div class="ptg-step-actions">
+            <div class="ptg-action ptg-action-done">✓ 8/8 Pre-Cutover tasks done</div>
+            <div class="ptg-action ptg-action-done">✓ 4/4 Cutover tasks done</div>
+            <div class="ptg-action ptg-action-done">✓ All transport configs validated</div>
+            <div class="ptg-action ptg-action-done">✓ Transport list finished 40h ahead of baseline</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ptg-step">
+        <div class="ptg-step-left">
+          <div class="ptg-step-circle done">✓</div>
+          <div class="ptg-step-line done"></div>
+        </div>
+        <div class="ptg-step-right">
+          <div class="ptg-step-header">
+            <span class="ptg-step-tag" style="background:var(--green-dim);color:var(--green-xl);border-color:rgba(34,197,94,.25)">COMPLETE · Post-Cutover Data</span>
+            <span class="ptg-step-time">Apr 28 – Apr 30</span>
+          </div>
+          <div class="ptg-step-title">Post-Cutover Data &amp; Config Tasks — Completed</div>
+          <div class="ptg-step-desc">Master Data Validation, BAM bank account updates, ZTTMSBL table configuration, and Smoke Testing Scenario 1 all successfully completed. Master Data Validation started 23.5h late but recovered within the planned window.</div>
+          <div class="ptg-step-actions">
+            <div class="ptg-action ptg-action-done">✓ Master Data Validation complete</div>
+            <div class="ptg-action ptg-action-done">✓ BAM bank accounts updated</div>
+            <div class="ptg-action ptg-action-done">✓ ZTTMSBL table updated</div>
+            <div class="ptg-action ptg-action-done">✓ Smoke Test Scenario 1 passed</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ptg-step" style="background:rgba(239,68,68,.03);border-radius:var(--r8);padding:12px 10px;margin:4px -10px">
+        <div class="ptg-step-left">
+          <div class="ptg-step-circle active">!</div>
+          <div class="ptg-step-line active"></div>
+        </div>
+        <div class="ptg-step-right">
+          <div class="ptg-step-header">
+            <span class="ptg-step-tag" style="background:var(--red-dim);color:var(--red-xl);border-color:rgba(239,68,68,.3)">⛔ ACTIVE BLOCKER · Defect Raised</span>
+            <span class="ptg-step-time">Target: Resolve ASAP</span>
+          </div>
+          <div class="ptg-step-title" style="color:var(--red-xl)">Resolve CAMT Transmission Failure — Add SFTP Public Key to High Radius</div>
+          <div class="ptg-step-desc">CAMT files are failing during transmission to High Radius due to a missing public key on the High Radius SFTP connection. A blocker defect has been raised. <strong style="color:var(--green-xl)">SIT can proceed in all other areas not impacted by this issue.</strong></div>
+          <div style="background:var(--s2);border-radius:var(--r8);padding:12px 14px;margin-top:10px;border-left:3px solid var(--red-l)">
+            <div style="font-size:10px;font-weight:600;color:var(--t0);margin-bottom:8px">🔧 Risk Mitigation Actions — Execute Now:</div>
+            <div class="ptg-action ptg-action-todo">→ Add the missing public key to the High Radius SFTP connection configuration</div>
+            <div class="ptg-action ptg-action-todo">→ Resolve the blocker defect in the defect management system</div>
+            <div class="ptg-action ptg-action-todo">→ Re-run CAMT file transmission and validate successful delivery to High Radius</div>
+            <div class="ptg-action ptg-action-todo">→ Confirm SFTP connectivity end-to-end before proceeding to Smoke Test 2</div>
+            <div class="ptg-action ptg-action-todo">→ Assign Preeti Saxena as owner with a formal resolution SLA</div>
+            <div class="ptg-action ptg-action-todo">→ In parallel — continue SIT execution in all other areas not affected by this defect</div>
+          </div>
+          <div style="margin-top:10px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:var(--r6);padding:9px 12px;font-size:10px;color:var(--t2)">
+            ⚠ <strong style="color:var(--red-xl)">If unresolved by EOD today:</strong> Smoke Test 2 (Send Statement to High Radius) cannot start. Final milestone slips to May 10+.
+          </div>
+        </div>
+      </div>
+
+      <div class="ptg-step">
+        <div class="ptg-step-left">
+          <div class="ptg-step-circle next">4</div>
+          <div class="ptg-step-line next"></div>
+        </div>
+        <div class="ptg-step-right">
+          <div class="ptg-step-header">
+            <span class="ptg-step-tag" style="background:var(--amber-dim);color:var(--amber-xl);border-color:rgba(245,158,11,.25)">NEXT · Est. 6h</span>
+            <span class="ptg-step-time">Target: Once defect resolved</span>
+          </div>
+          <div class="ptg-step-title">Execute Smoke Testing — Scenario 2: Send Statement to High Radius</div>
+          <div class="ptg-step-desc">Immediately upon SFTP public key fix and CAMT transmission validation, Nikhil Eppalapally executes Smoke Test Scenario 2. This test is isolated to the High Radius SFTP integration and independent of all other SIT scenarios.</div>
+          <div style="background:var(--s2);border-radius:var(--r8);padding:12px 14px;margin-top:10px;border-left:3px solid var(--amber-l)">
+            <div style="font-size:10px;font-weight:600;color:var(--t0);margin-bottom:8px">🧪 Risk Mitigation Actions:</div>
+            <div class="ptg-action ptg-action-todo">→ Pre-stage test data and scripts for Smoke Test 2 before defect is resolved</div>
+            <div class="ptg-action ptg-action-todo">→ Assign secondary resource as co-executor to remove single resource dependency</div>
+            <div class="ptg-action ptg-action-todo">→ Start test immediately upon SFTP green light — no waiting for approvals</div>
+            <div class="ptg-action ptg-action-todo">→ Document test results in real-time for final sign-off pack</div>
+            <div class="ptg-action ptg-action-todo">→ Escalate any defects immediately — do not hold until end of test</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ptg-step">
+        <div class="ptg-step-left">
+          <div class="ptg-step-circle next">5</div>
+          <div class="ptg-step-line" style="opacity:0"></div>
+        </div>
+        <div class="ptg-step-right">
+          <div class="ptg-step-header">
+            <span class="ptg-step-tag" style="background:var(--teal-dim);color:var(--teal-xl);border-color:rgba(6,182,212,.25)">FINAL MILESTONE · Est. 0.1h</span>
+            <span class="ptg-step-time">Target: May 9, 17:06</span>
+          </div>
+          <div class="ptg-step-title">🎯 Confirm SITCutover Completion &amp; Overall Readiness for SIT</div>
+          <div class="ptg-step-desc">Nandini Ray Nag confirms all Post-Cutover tasks complete and signs off on SIT readiness. This closes the FEB 2027 IM 2.2 CB SIT Cutover plan. Baseline was Apr 30, 15:18 — final completion +9 days late, recoverable within the SIT window.</div>
+          <div style="background:var(--s2);border-radius:var(--r8);padding:12px 14px;margin-top:10px;border-left:3px solid var(--teal-l)">
+            <div style="font-size:10px;font-weight:600;color:var(--t0);margin-bottom:8px">✅ Risk Mitigation Actions:</div>
+            <div class="ptg-action ptg-action-todo">→ Prepare SIT readiness summary report before Smoke Test 2 completes</div>
+            <div class="ptg-action ptg-action-todo">→ Schedule final sign-off call for May 9, 17:00 — invite all stakeholders now</div>
+            <div class="ptg-action ptg-action-todo">→ Confirm downstream SIT teams are aware of +9 day slip and updated timeline</div>
+            <div class="ptg-action ptg-action-todo">→ Update project status in JIRA and send completion notification</div>
+            <div class="ptg-action ptg-action-todo">→ Conduct 30-min retrospective to capture learnings for next cutover cycle</div>
+          </div>
+          <div style="margin-top:10px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:var(--r6);padding:9px 12px;font-size:10px;color:var(--t2)">
+            🟢 <strong style="color:var(--green-xl)">On completion:</strong> FEB 2027 IM 2.2 CB SIT Cutover officially closed. SIT execution begins. Health score recovers to 100/100.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- end panel-ptg -->
+</main>
+
+<footer>
+  <span>FEB 2027 IM 2.2 CB SIT Cutover · TMS-CB · Baseline: Apr 30 15:18 · Client Management Dashboard</span>
+  <span>Slip: +9 days (201h) · Remaining: 8.1h · Earliest completion: May 9, 17:06</span>
+</footer>
+<script>
+/* ═══════════════════════════════════════
+   TAB SWITCHING
+═══════════════════════════════════════ */
+function switchTab(name) {
+  // Update tab buttons
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('tab-' + name);
+  if (btn) btn.classList.add('active');
+
+  // Show/hide all panels
+  const panels = ['dashboard','gantt','ptg'];
+  panels.forEach(p => {
+    const el = document.getElementById('panel-' + p);
+    if (el) el.style.display = (p === name) ? '' : 'none';
+  });
+
+  // Tab-specific initialisation
+  if (name === 'gantt') { buildGantt(); buildCPChain(); }
+  if (name === 'ptg')   { initPTGChart(); }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function buildCPChain() {
+  const el = document.getElementById('cp-chain-vis');
+  if (!el) return;
+  const cpTasks = TASKS.filter(t => t.cp);
+  el.innerHTML = '';
+  cpTasks.forEach((t, i) => {
+    const colorMap = { Complete:'var(--green-l)', Issue:'var(--red-l)', Sent:'var(--blue-l)', Planned:'var(--t3)' };
+    const node = document.createElement('div');
+    node.style.cssText = `display:flex;align-items:center;gap:0`;
+    node.innerHTML = `
+      <div style="
+        background:${t.status==='Issue'?'rgba(239,68,68,.15)':t.status==='Complete'?'rgba(34,197,94,.1)':'rgba(59,130,246,.1)'};
+        border:1px solid ${colorMap[t.status]||'var(--b0)'};
+        border-radius:6px;padding:4px 8px;font-size:9px;font-family:var(--mono);
+        color:${colorMap[t.status]||'var(--t2)'};white-space:nowrap;cursor:default;
+        ${t.status==='Issue'?'animation:badge-pulse 2s ease-in-out infinite':''}
+      " title="${t.name}">#${t.id}</div>
+      ${i < cpTasks.length-1 ? `<div style="font-size:10px;color:var(--t3);padding:0 3px">→</div>` : ''}
+    `;
+    el.appendChild(node);
+  });
+}
+
+/* ═══════════════════════════════════════
+   (1) DATA LAYER
+═══════════════════════════════════════ */
+const TASKS = [
+  { id:3139, wbs:'FEB2027IMSITCUTOVER1.1.1', name:'Greenlight to Begin TMS CBPF Feb 2027 IM 2.2 SIT Cutover',
+    dur:1, status:'Complete', phase:'Milestone', team:'Cutover team', owner:'Nandini Ray Nag',
+    planStart:'2026-04-20T00:36', planEnd:'2026-04-20T09:00',
+    baseStart:'2026-04-20T00:36', baseEnd:'2026-04-20T09:00',
+    actStart:'2026-04-20T00:36', actEnd:'2026-04-20T09:00',
+    pred:[], emailSent:'Y', cp:true, note:'00 - Milestone/CheckPoint' },
+  { id:3201, wbs:'FEB2027IMSITCUTOVER1.1.2.1.1.1', name:'Project Team to share the list of COs/TRs within the scope',
+    dur:6, status:'Complete', phase:'Pre-Cutover', team:'TMS Project - Config', owner:'Nikhil Eppalapally',
+    planStart:'2026-04-20T09:00', planEnd:'2026-04-20T16:00',
+    baseStart:'2026-04-20T09:00', baseEnd:'2026-04-20T16:00',
+    actStart:null, actEnd:null, pred:[3139], emailSent:'Y', cp:false, note:'01 - Pre-Cutover' },
+  { id:3143, wbs:'FEB2027IMSITCUTOVER1.1.2.1.1.2', name:'Validate transport list',
+    dur:16, status:'Complete', phase:'Pre-Cutover', team:'TMS Project - Build', owner:'Sarath Babu Siripurapu',
+    planStart:'2026-04-20T09:00', planEnd:'2026-04-22T09:00',
+    baseStart:'2026-04-20T09:00', baseEnd:'2026-04-22T09:00',
+    actStart:null, actEnd:'2026-04-20T16:59', pred:[3139], emailSent:'Y', cp:false, note:'01 - Pre-Cutover' },
+  { id:3144, wbs:'FEB2027IMSITCUTOVER1.1.2.1.1.3', name:'Update & Verify Conversion Runbooks - Cash & Banking',
+    dur:8, status:'Complete', phase:'Pre-Cutover', team:'TMS Project - Config', owner:'Nikhil Eppalapally',
+    planStart:'2026-04-21T09:00', planEnd:'2026-04-22T09:00',
+    baseStart:'2026-04-21T09:00', baseEnd:'2026-04-22T09:00',
+    actStart:null, actEnd:null, pred:[3139], emailSent:'Y', cp:false, note:'01 - Pre-Cutover' },
+  { id:3145, wbs:'FEB2027IMSITCUTOVER1.1.2.1.1.4', name:'Completing Jira activities (UFI Release)',
+    dur:8, status:'Complete', phase:'Pre-Cutover', team:'TMS Project - Config', owner:'Nikhil Eppalapally',
+    planStart:'2026-04-21T09:00', planEnd:'2026-04-22T09:00',
+    baseStart:'2026-04-21T09:00', baseEnd:'2026-04-22T09:00',
+    actStart:null, actEnd:null, pred:[3139], emailSent:'Y', cp:false, note:'01 - Pre-Cutover' },
+  { id:3146, wbs:'FEB2027IMSITCUTOVER1.1.2.1.1.5', name:'Internal Review of all Jira Stories and COs before SQA',
+    dur:16, status:'Complete', phase:'Pre-Cutover', team:'TMS Project - Config', owner:'Nikhil Eppalapally',
+    planStart:'2026-04-21T09:00', planEnd:'2026-04-23T09:00',
+    baseStart:'2026-04-21T09:00', baseEnd:'2026-04-23T09:00',
+    actStart:null, actEnd:null, pred:[3139], emailSent:'Y', cp:false, note:'01 - Pre-Cutover' },
+  { id:3147, wbs:'FEB2027IMSITCUTOVER1.1.2.1.1.6', name:'SQA reviews Jira Stories/COs for Production Movement',
+    dur:16, status:'Complete', phase:'Pre-Cutover', team:'TMS Project - SQA', owner:'Divyanshi Bajpai',
+    planStart:'2026-04-21T09:00', planEnd:'2026-04-23T09:00',
+    baseStart:'2026-04-21T09:00', baseEnd:'2026-04-23T09:00',
+    actStart:null, actEnd:null, pred:[3139], emailSent:'Y', cp:false, note:'01 - Pre-Cutover' },
+  { id:3216, wbs:'FEB2027IMSITCUTOVER1.1.2.1.1.7', name:'Validation of Custom Tables (ZTTMSBL_BS_DSTR2)',
+    dur:4, status:'Complete', phase:'Pre-Cutover', team:'TMS Project - SQA', owner:'Nikhil Eppalapally',
+    planStart:'2026-04-21T09:00', planEnd:'2026-04-21T14:00',
+    baseStart:'2026-04-21T09:00', baseEnd:'2026-04-21T14:00',
+    actStart:null, actEnd:null, pred:[3139], emailSent:'Y', cp:false, note:'01 - Pre-Cutover' },
+  { id:3168, wbs:'FEB2027IMSITCUTOVER1.1.3', name:'Confirm move into Technical Cutover',
+    dur:0.1, status:'Complete', phase:'Milestone', team:'Cutover team', owner:'Nandini Ray Nag',
+    planStart:'2026-04-23T08:00', planEnd:'2026-04-23T08:06',
+    baseStart:'2026-04-23T08:00', baseEnd:'2026-04-23T08:06',
+    actStart:null, actEnd:null, pred:[], emailSent:'Y', cp:true, note:'00 - Milestone/CheckPoint' },
+  { id:3171, wbs:'FEB2027IMSITCUTOVER1.1.4.1.1', name:'CnB and PF | Import of Transports for Config',
+    dur:2, status:'Complete', phase:'Cutover', team:'TMS Project - Config', owner:'Nikhil Eppalapally',
+    planStart:'2026-04-23T08:06', planEnd:'2026-04-23T10:06',
+    baseStart:'2026-04-23T08:06', baseEnd:'2026-04-23T10:06',
+    actStart:null, actEnd:null, pred:[3168], emailSent:'Y', cp:true, note:'02 - Cutover' },
+  { id:3172, wbs:'FEB2027IMSITCUTOVER1.1.4.1.2', name:'CnB and PF | Validate Transports - Config',
+    dur:2, status:'Complete', phase:'Cutover', team:'TMS Project - Config', owner:'Nikhil Eppalapally',
+    planStart:'2026-04-23T10:06', planEnd:'2026-04-23T13:06',
+    baseStart:'2026-04-23T10:06', baseEnd:'2026-04-23T13:06',
+    actStart:null, actEnd:null, pred:[3171], emailSent:'Y', cp:true, note:'02 - Cutover' },
+  { id:3173, wbs:'FEB2027IMSITCUTOVER1.1.5', name:'Confirm completion of Cutover and move into Post Cutover',
+    dur:0.1, status:'Complete', phase:'Milestone', team:'Cutover team', owner:'Nandini Ray Nag',
+    planStart:'2026-04-23T13:06', planEnd:'2026-04-23T13:12',
+    baseStart:'2026-04-23T13:06', baseEnd:'2026-04-23T13:12',
+    actStart:null, actEnd:null, pred:[3172], emailSent:'Y', cp:true, note:'00 - Milestone/CheckPoint' },
+  { id:3193, wbs:'FEB2027IMSITCUTOVER1.1.6.1.1', name:'Master Data Validation',
+    dur:16, status:'Complete', phase:'Post-Cutover', team:'TMS Project - Config', owner:'Nikhil Eppalapally',
+    planStart:'2026-04-28T13:12', planEnd:'2026-04-29T13:42',
+    baseStart:'2026-04-27T13:42', baseEnd:'2026-04-29T13:42',
+    actStart:null, actEnd:null, pred:[3173], emailSent:'Y', cp:false, note:'03 - Post-Cutover Misc' },
+  { id:3218, wbs:'FEB2027IMSITCUTOVER1.1.6.1.2', name:'Update External bank accounts in BAM (Posting Flag + GLs)',
+    dur:8, status:'Complete', phase:'Post-Cutover', team:'TMS Project - Config', owner:'Noor Shaik',
+    planStart:'2026-04-28T13:12', planEnd:'2026-04-29T13:12',
+    baseStart:'2026-04-28T13:12', baseEnd:'2026-04-29T13:12',
+    actStart:null, actEnd:null, pred:[3173], emailSent:'Y', cp:false, note:'03 - Post-Cutover Misc' },
+  { id:3219, wbs:'FEB2027IMSITCUTOVER1.1.6.1.3', name:'Update table ZTTMSBL_BS_DSTR2 (bank account LE 6162)',
+    dur:8, status:'Complete', phase:'Post-Cutover', team:'TMS Project - Config', owner:'Nikhil Eppalapally',
+    planStart:'2026-04-28T13:12', planEnd:'2026-04-29T13:12',
+    baseStart:'2026-04-28T13:12', baseEnd:'2026-04-29T13:12',
+    actStart:null, actEnd:null, pred:[3173], emailSent:'Y', cp:false, note:'03 - Post-Cutover Misc' },
+  { id:3220, wbs:'FEB2027IMSITCUTOVER1.1.6.1.4', name:'CAMT File Transmission Failure to High Radius (Missing SFTP Public Key)',
+    dur:2, status:'Issue', phase:'Post-Cutover', team:'TMS Project - Config', owner:'Preeti Saxena',
+    planStart:'2026-04-28T13:12', planEnd:'2026-04-28T13:42',
+    baseStart:'2026-04-28T13:12', baseEnd:'2026-04-28T13:42',
+    actStart:null, actEnd:null, pred:[3173], emailSent:'Y', cp:true, note:'03 - Post-Cutover Misc' },
+  { id:3217, wbs:'FEB2027IMSITCUTOVER1.1.6.1.5', name:'Smoke Testing - Scenario 1',
+    dur:6, status:'Complete', phase:'Post-Cutover', team:'TMS Project - Config', owner:'Nikhil Eppalapally',
+    planStart:'2026-04-29T13:12', planEnd:'2026-04-30T10:12',
+    baseStart:'2026-04-29T13:12', baseEnd:'2026-04-30T10:12',
+    actStart:null, actEnd:null, pred:[3220], emailSent:'Y', cp:false, note:'03 - Post-Cutover Smoke' },
+  { id:3221, wbs:'FEB2027IMSITCUTOVER1.1.6.1.6', name:'Smoke Testing - Scenario 2',
+    dur:6, status:'Sent', phase:'Post-Cutover', team:'TMS Project - Config', owner:'Nikhil Eppalapally',
+    planStart:'2026-04-29T13:12', planEnd:'2026-04-30T10:12',
+    baseStart:'2026-04-29T13:12', baseEnd:'2026-04-30T10:12',
+    actStart:null, actEnd:null, pred:[3220], emailSent:'N', cp:true, note:'03 - Post-Cutover Smoke' },
+  { id:3200, wbs:'FEB2027IMSITCUTOVER1.1.7', name:'Confirm completion of SITCutover and Overall Readiness for SIT',
+    dur:0.1, status:'Planned', phase:'Milestone', team:'Cutover team', owner:'Nandini Ray Nag',
+    planStart:'2026-04-30T15:12', planEnd:'2026-04-30T15:18',
+    baseStart:'2026-04-30T15:12', baseEnd:'2026-04-30T15:18',
+    actStart:null, actEnd:null, pred:[3221], emailSent:'Y', cp:true, note:'00 - Milestone/CheckPoint' }
+];
+
+/* ═══════════════════════════════════════
+   (2) STATE MANAGEMENT
+═══════════════════════════════════════ */
+const STATE = {
+  phaseFilter: '', statusFilter: '', teamFilter: '', ownerFilter: '', cpOnly: false,
+  delaySortMode: 'delay',
+  openPhases: { 'Milestone':true, 'Pre-Cutover':true, 'Cutover':true, 'Post-Cutover':true }
+};
+
+// Gantt timeline: Apr 20 → May 15 = 25 days
+const GANTT_START = new Date('2026-04-20T00:00:00');
+const GANTT_END   = new Date('2026-05-15T00:00:00');
+const GANTT_DAYS  = Math.round((GANTT_END - GANTT_START) / 86400000);
+const TODAY       = new Date('2026-05-09T09:00:00');
+const TODAY_OFF   = (TODAY - GANTT_START) / 86400000;
+
+function getFiltered() {
+  return TASKS.filter(t => {
+    if (STATE.phaseFilter  && t.phase  !== STATE.phaseFilter)  return false;
+    if (STATE.statusFilter && t.status !== STATE.statusFilter) return false;
+    if (STATE.teamFilter   && t.team   !== STATE.teamFilter)   return false;
+    if (STATE.ownerFilter  && t.owner  !== STATE.ownerFilter)  return false;
+    if (STATE.cpOnly && !t.cp) return false;
+    return true;
+  });
+}
+
+function dayOffset(dtStr) {
+  if (!dtStr) return null;
+  return (new Date(dtStr) - GANTT_START) / 86400000;
+}
+
+function fmtDate(dtStr) {
+  if (!dtStr) return '—';
+  const d = new Date(dtStr);
+  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) + ' ' +
+         d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+}
+
+function statusBadgeHtml(s) {
+  const map = {Complete:'b-complete ✓',Issue:'b-issue !',Sent:'b-sent →',Planned:'b-planned ○'};
+  const cls = map[s]||'b-planned ○';
+  return `<span class="badge ${cls.split(' ')[0]}">${cls.split(' ').slice(1).join(' ')} ${s}</span>`;
+}
+
+/* ═══════════════════════════════════════
+   (3) GANTT RENDER
+═══════════════════════════════════════ */
+function buildGantt() {
+  const head = document.getElementById('gantt-head');
+  const body = document.getElementById('gantt-body');
+
+  // Build header
+  head.innerHTML = '';
+  const hr = document.createElement('tr');
+  hr.innerHTML = `<th style="width:200px;min-width:200px">Task</th>
+                  <th style="width:68px">Status</th>
+                  <th style="width:55px">Owner</th>
+                  <th style="width:38px">Dur</th>`;
+  // Date columns
+  for (let d = 0; d <= GANTT_DAYS; d++) {
+    const dt = new Date(GANTT_START);
+    dt.setDate(dt.getDate() + d);
+    const isWeekend = dt.getDay() === 0 || dt.getDay() === 6;
+    const lbl = dt.getDate() + '/' + (dt.getMonth()+1);
+    const th = document.createElement('th');
+    th.className = 'date-header-cell' + (isWeekend?' weekend':'');
+    th.style.minWidth = '30px';
+    th.textContent = d % 2 === 0 ? lbl : '';
+    hr.appendChild(th);
+  }
+  head.appendChild(hr);
+
+  // Body
+  body.innerHTML = '';
+  const filtered = getFiltered();
+  const phases = ['Milestone','Pre-Cutover','Cutover','Post-Cutover'];
+  const phaseColors = {'Milestone':'rgba(6,182,212,.15)','Pre-Cutover':'rgba(34,197,94,.08)',
+                       'Cutover':'rgba(59,130,246,.08)','Post-Cutover':'rgba(245,158,11,.07)'};
+
+  document.getElementById('task-count').textContent = filtered.length;
+
+  phases.forEach(phase => {
+    const phaseTasks = filtered.filter(t => t.phase === phase);
+    if (!phaseTasks.length) return;
+
+    // Phase row
+    const phaseRow = document.createElement('tr');
+    phaseRow.className = 'g-phase-row' + (STATE.openPhases[phase] ? '' : ' collapsed');
+    phaseRow.dataset.phase = phase;
+    const tdCount = GANTT_DAYS + 5;
+    phaseRow.innerHTML = `<td colspan="${tdCount}"><span class="g-phase-toggle">▾</span>${phase} <span style="color:var(--t3);font-size:8px">(${phaseTasks.length})</span></td>`;
+    phaseRow.addEventListener('click', () => togglePhase(phase, phaseRow));
+    body.appendChild(phaseRow);
+
+    phaseTasks.forEach(task => {
+      const tr = document.createElement('tr');
+      tr.dataset.taskId = task.id;
+      tr.style.display = STATE.openPhases[phase] ? '' : 'none';
+      if (task.status === 'Issue') tr.style.background = 'rgba(239,68,68,.04)';
+
+      const ownerShort = task.owner.split(' ')[0];
+      const cpBadge = task.cp ? ' <span class="badge b-cp" style="font-size:7px;padding:1px 4px">CP</span>' : '';
+      const nameEl = `<span class="g-task-name" title="${task.name}">${task.name.length>38?task.name.slice(0,36)+'…':task.name}${cpBadge}</span>
+                      <span class="g-task-owner">${task.id}</span>`;
+
+      tr.innerHTML = `<td style="width:200px;max-width:200px">${nameEl}</td>
+        <td>${statusBadgeHtml(task.status)}</td>
+        <td class="g-dur">${ownerShort}</td>
+        <td class="g-dur">${task.dur}h</td>`;
+
+      // Bar cells
+      const trackTd = document.createElement('td');
+      trackTd.colSpan = GANTT_DAYS + 1;
+      trackTd.className = 'g-bar-cell';
+      trackTd.style.padding = '1px 0';
+
+      const track = document.createElement('div');
+      track.className = 'g-track';
+      track.style.background = phaseColors[phase] || 'transparent';
+
+      // Baseline bar
+      const bS = dayOffset(task.baseStart);
+      const bE = dayOffset(task.baseEnd);
+      if (bS !== null && bE !== null) {
+        const bBar = document.createElement('div');
+        bBar.className = 'g-bar-baseline';
+        const pct = GANTT_DAYS;
+        bBar.style.left   = (bS/pct*100) + '%';
+        bBar.style.width  = Math.max((bE-bS)/pct*100, 0.3) + '%';
+        track.appendChild(bBar);
+      }
+
+      // Actual/projected bar
+      let aS = dayOffset(task.planStart);
+      let aE = task.status === 'Issue' ? TODAY_OFF : dayOffset(task.planEnd);
+      if (task.status === 'Issue') aE = TODAY_OFF + 0.5;
+      if (task.status === 'Sent')  aS = TODAY_OFF, aE = TODAY_OFF + 0.5;
+      if (task.status === 'Planned') aS = TODAY_OFF, aE = TODAY_OFF + 0.3;
+
+      const aBar = document.createElement('div');
+      const barCls = {Complete:'g-bar-done',Issue:'g-bar-issue',Sent:'g-bar-sent',Planned:'g-bar-planned'}[task.status];
+      aBar.className = `g-bar-actual ${barCls}${task.cp?' g-bar-cp':''}`;
+      const pct2 = GANTT_DAYS;
+      aBar.style.left  = (aS/pct2*100) + '%';
+      aBar.style.width = Math.max((aE-aS)/pct2*100, 0.4) + '%';
+      aBar.dataset.taskId = task.id;
+
+      if (task.status === 'Issue') {
+        const dot = document.createElement('div');
+        dot.className = 'g-blocker-dot';
+        aBar.appendChild(dot);
+      }
+
+      // Hover tooltip
+      aBar.addEventListener('mouseenter', (e) => showTaskTooltip(e, task));
+      aBar.addEventListener('mousemove',  (e) => moveTooltip(e));
+      aBar.addEventListener('mouseleave', hideTooltip);
+      aBar.addEventListener('click', () => openDrawer(task));
+
+      track.appendChild(aBar);
+
+      // Today line (render on every row)
+      const todayLine = document.createElement('div');
+      todayLine.className = 'g-today-line';
+      todayLine.style.left = (TODAY_OFF/GANTT_DAYS*100) + '%';
+      if (task === phaseTasks[0]) {
+        const lbl = document.createElement('div');
+        lbl.className = 'g-today-label';
+        lbl.textContent = 'TODAY';
+        lbl.style.left = (TODAY_OFF/GANTT_DAYS*100) + '%';
+        track.appendChild(lbl);
+      }
+      track.appendChild(todayLine);
+
+      trackTd.appendChild(track);
+      tr.appendChild(trackTd);
+      body.appendChild(tr);
+    });
+  });
+}
+
+function togglePhase(phase, row) {
+  STATE.openPhases[phase] = !STATE.openPhases[phase];
+  row.classList.toggle('collapsed', !STATE.openPhases[phase]);
+  document.querySelectorAll(`[data-task-id]`).forEach(tr => {
+    const id = parseInt(tr.dataset.taskId);
+    const t = TASKS.find(x => x.id === id);
+    if (t && t.phase === phase) {
+      tr.style.display = STATE.openPhases[phase] ? '' : 'none';
+    }
+  });
+}
+
+/* ═══════════════════════════════════════
+   TOOLTIP
+═══════════════════════════════════════ */
+function showTaskTooltip(e, task) {
+  const tt = document.getElementById('tt');
+  const delay = task.status === 'Issue' ? '+201h overdue' :
+                task.status === 'Sent'  ? 'Blocked — waiting' :
+                task.status === 'Planned' ? 'Not started' : '—';
+  document.getElementById('tt-title').textContent = task.name;
+  document.getElementById('tt-body').innerHTML = `
+    <div class="tt-row"><span class="tt-key">Status</span><span class="tt-val">${task.status}</span></div>
+    <div class="tt-row"><span class="tt-key">Owner</span><span class="tt-val">${task.owner}</span></div>
+    <div class="tt-row"><span class="tt-key">Team</span><span class="tt-val">${task.team}</span></div>
+    <div class="tt-row"><span class="tt-key">Planned</span><span class="tt-val">${fmtDate(task.planStart)} → ${fmtDate(task.planEnd)}</span></div>
+    <div class="tt-row"><span class="tt-key">Duration</span><span class="tt-val">${task.dur}h</span></div>
+    <div class="tt-row"><span class="tt-key">Delay</span><span class="tt-val" style="color:${delay.startsWith('+')?'#f87171':'#4ade80'}">${delay}</span></div>
+    ${task.pred.length?`<div class="tt-row"><span class="tt-key">Predecessors</span><span class="tt-val">${task.pred.join(', ')}</span></div>`:''}
+    ${task.cp?'<div style="color:#22d3ee;font-size:9px;font-family:var(--mono);margin-top:4px">⬡ Critical Path Task</div>':''}
+  `;
+  tt.style.display = 'block';
+  moveTooltip(e);
+}
+function moveTooltip(e) {
+  const tt = document.getElementById('tt');
+  const x = e.clientX + 14, y = e.clientY - 10;
+  tt.style.left = (x + 280 > window.innerWidth ? e.clientX - 294 : x) + 'px';
+  tt.style.top  = (y + 200 > window.innerHeight ? e.clientY - 210 : y) + 'px';
+}
+function hideTooltip() { document.getElementById('tt').style.display = 'none'; }
+
+/* ═══════════════════════════════════════
+   TASK DRAWER
+═══════════════════════════════════════ */
+function openDrawer(task) {
+  const drawer = document.getElementById('task-drawer');
+  const grid   = document.getElementById('drawer-grid');
+  document.getElementById('drawer-title').textContent = task.name;
+  const fields = [
+    ['Task ID', task.id], ['WBS', task.wbs], ['Phase', task.phase], ['Status', task.status],
+    ['Team', task.team], ['Owner', task.owner], ['Duration', task.dur + 'h'], ['Email Sent', task.emailSent],
+    ['Critical Path', task.cp ? '✓ Yes' : 'No'], ['Predecessors', task.pred.join(', ') || '—'],
+    ['Planned Start', fmtDate(task.planStart)], ['Planned Finish', fmtDate(task.planEnd)],
+    ['Baseline Start', fmtDate(task.baseStart)], ['Baseline Finish', fmtDate(task.baseEnd)],
+    ['Actual Start', fmtDate(task.actStart)], ['Actual Finish', fmtDate(task.actEnd)],
+    ['Activity Category', task.note], ['Workstream', 'TMS-CB'],
+  ];
+  grid.innerHTML = fields.map(([k,v]) =>
+    `<div class="drawer-field"><label>${k}</label><span>${v}</span></div>`
+  ).join('');
+  drawer.classList.add('open');
+  drawer.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function closeDrawer() {
+  document.getElementById('task-drawer').classList.remove('open');
+}
+
+/* ═══════════════════════════════════════
+   (5) CHART INIT
+═══════════════════════════════════════ */
+Chart.defaults.color = '#4a6080';
+Chart.defaults.borderColor = '#1c2d47';
+Chart.defaults.font.family = "'IBM Plex Mono', monospace";
+Chart.defaults.font.size = 10;
+
+const TT_DEFAULTS = {
+  backgroundColor:'rgba(8,12,24,.97)',
+  borderColor:'#243860', borderWidth:1,
+  titleColor:'#e2e8f0', bodyColor:'#8aa0c0',
+  padding:10, cornerRadius:6,
+  titleFont:{family:"'Outfit',sans-serif",size:11,weight:'600'},
+  bodyFont:{family:"'IBM Plex Mono',monospace",size:10},
+};
+
+// DONUT CHART
+let donutChart;
+function initDonutChart() {
+  const ctx = document.getElementById('donutChart').getContext('2d');
+  donutChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      datasets:[{
+        data:[16,1,1,1],
+        backgroundColor:['rgba(34,197,94,.8)','rgba(239,68,68,.8)','rgba(59,130,246,.75)','rgba(74,96,128,.5)'],
+        borderWidth:0, hoverOffset:5,
+      }]
+    },
+    options:{
+      cutout:'70%',
+      plugins:{
+        legend:{display:false},
+        tooltip:{...TT_DEFAULTS, callbacks:{
+          label:(ctx)=>['Complete','Issue','Sent','Planned'][ctx.dataIndex]+': '+ctx.raw
+        }}
+      },
+      onClick:(e,els)=>{
+        if (!els.length) return;
+        const statuses = ['Complete','Issue','Sent','Planned'];
+        filterByStatus(statuses[els[0].index]);
+      }
+    }
+  });
+}
+
+// DELAY CHART
+let delayChart;
+let delaySortMode = 'delay';
+function getDelayData() {
+  const delayTasks = TASKS.map(t => {
+    let delayH = 0;
+    if (t.status === 'Issue') delayH = 201;
+    else if (t.status === 'Sent' || t.status === 'Planned') delayH = 201;
+    else if (t.id === 3193) delayH = 23.5;  // Master Data Validation late start
+    else if (t.id === 3143) delayH = -40;    // Validate transport list early
+    return { ...t, delayH };
+  }).filter(t => t.delayH !== 0);
+
+  if (delaySortMode === 'delay') delayTasks.sort((a,b) => b.delayH - a.delayH);
+  else if (delaySortMode === 'phase') {
+    const po = {'Milestone':0,'Pre-Cutover':1,'Cutover':2,'Post-Cutover':3};
+    delayTasks.sort((a,b) => po[a.phase] - po[b.phase]);
+  } else delayTasks.sort((a,b) => a.id - b.id);
+  return delayTasks;
+}
+
+function initDelayChart() {
+  const dt = getDelayData();
+  const ctx = document.getElementById('delayChart').getContext('2d');
+  delayChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: dt.map(t => t.name.length>28?t.name.slice(0,26)+'…':t.name),
+      datasets:[{
+        data: dt.map(t=>t.delayH),
+        backgroundColor: dt.map(t => t.delayH > 100 ? 'rgba(239,68,68,.8)' : t.delayH > 0 ? 'rgba(245,158,11,.7)' : 'rgba(34,197,94,.7)'),
+        borderRadius:3, borderSkipped:false,
+      }]
+    },
+    options:{
+      indexAxis:'y', responsive:true,
+      plugins:{
+        legend:{display:false},
+        tooltip:{...TT_DEFAULTS, callbacks:{
+          label:(ctx)=>{
+            const t = dt[ctx.dataIndex];
+            return (ctx.raw>0?'+':'')+ctx.raw+'h · '+t.status;
+          }
+        }}
+      },
+      scales:{
+        x:{grid:{color:'rgba(28,45,71,.8)'},border:{color:'transparent'},
+           ticks:{callback:v=>(v>0?'+':'')+v+'h'}},
+        y:{grid:{display:false},border:{color:'transparent'},ticks:{font:{size:9}}}
+      }
+    }
+  });
+}
+
+function setSortMode(mode, btn) {
+  delaySortMode = mode;
+  document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const dt = getDelayData();
+  delayChart.data.labels = dt.map(t=>t.name.length>28?t.name.slice(0,26)+'…':t.name);
+  delayChart.data.datasets[0].data = dt.map(t=>t.delayH);
+  delayChart.data.datasets[0].backgroundColor = dt.map(t=>t.delayH>100?'rgba(239,68,68,.8)':t.delayH>0?'rgba(245,158,11,.7)':'rgba(34,197,94,.7)');
+  delayChart.update();
+}
+
+// TEAM WORKLOAD CHART
+function initTeamChart() {
+  const teams = ['TMS Config','Cutover team','TMS SQA','TMS Build'];
+  const teamMap = {'TMS Project - Config':'TMS Config','Cutover team':'Cutover team',
+                   'TMS Project - SQA':'TMS SQA','TMS Project - Build':'TMS Build'};
+  const planned = {}, done = {};
+  teams.forEach(t=>{planned[t]=0;done[t]=0;});
+  TASKS.forEach(t=>{
+    const tm = teamMap[t.team]||t.team;
+    if (teams.includes(tm)) {
+      planned[tm] = (planned[tm]||0) + t.dur;
+      if (t.status==='Complete') done[tm] = (done[tm]||0) + t.dur;
+    }
+  });
+  const ctx = document.getElementById('teamChart').getContext('2d');
+  new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels:teams,
+      datasets:[
+        {label:'Planned Hours',data:teams.map(t=>+(planned[t]||0).toFixed(1)),
+         backgroundColor:'rgba(59,130,246,.25)',borderColor:'rgba(59,130,246,.5)',borderWidth:1,borderRadius:4},
+        {label:'Completed Hours',data:teams.map(t=>+(done[t]||0).toFixed(1)),
+         backgroundColor:'rgba(34,197,94,.6)',borderColor:'rgba(34,197,94,.8)',borderWidth:1,borderRadius:4},
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{display:true,position:'bottom',labels:{boxWidth:10,padding:10}},
+        tooltip:{...TT_DEFAULTS}
+      },
+      scales:{
+        y:{beginAtZero:true,grid:{color:'rgba(28,45,71,.8)'},border:{color:'transparent'},
+           title:{display:true,text:'Hours',font:{size:9}}},
+        x:{grid:{display:false},border:{color:'transparent'}}
+      }
+    }
+  });
+}
+
+// PATH TO GREEN CHART
+function initPTGChart() {
+  const canvas = document.getElementById('ptgChart');
+  if (!canvas) return;
+  // Destroy existing chart instance if present to avoid duplicate
+  const existing = Chart.getChart(canvas);
+  if (existing) return;  // already initialised
+  const labels = ['Apr 20','Apr 23','Apr 28','Apr 30\n(baseline)','May 5','May 9','May 10','May 13+'];
+  const ctx = document.getElementById('ptgChart').getContext('2d');
+
+  const ptgChart = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        { label:'Actual Progress', data:[10,63,79,84,84,84,null,null],
+          borderColor:'rgba(34,197,94,.9)', backgroundColor:'rgba(34,197,94,.06)',
+          pointBackgroundColor:'#22c55e', pointRadius:4, borderWidth:2.5, tension:0.3, fill:true },
+        { label:'Best Case (May 9)', data:[null,null,null,84,null,100,null,null],
+          borderColor:'rgba(6,182,212,.8)', backgroundColor:'transparent',
+          pointBackgroundColor:'#06b6d4', pointRadius:4, borderWidth:2,
+          borderDash:[5,3], tension:0.3 },
+        { label:'Moderate (May 10)', data:[null,null,null,84,null,null,100,null],
+          borderColor:'rgba(245,158,11,.7)', backgroundColor:'transparent',
+          pointBackgroundColor:'#f59e0b', pointRadius:4, borderWidth:2,
+          borderDash:[5,3], tension:0.3 },
+        { label:'At Risk (May 13+)', data:[null,null,null,84,null,null,null,100],
+          borderColor:'rgba(239,68,68,.6)', backgroundColor:'transparent',
+          pointBackgroundColor:'#ef4444', pointRadius:4, borderWidth:2,
+          borderDash:[5,3], tension:0.3 },
+        { label:'Baseline Target', data:[0,null,null,100,null,null,null,null],
+          borderColor:'rgba(74,96,128,.4)', backgroundColor:'transparent',
+          pointRadius:2, borderWidth:1.5, borderDash:[2,4] },
+      ]
+    },
+    plugins:[{
+      id:'slipZone',
+      beforeDraw(chart){
+        const {ctx,scales:{x,y}} = chart;
+        if (!x||!y) return;
+        // Shade between Apr 30 (index 3) and May 9 (index 5)
+        try {
+          const x1 = x.getPixelForValue(3);
+          const x2 = x.getPixelForValue(5);
+          const y1 = y.getPixelForValue(100);
+          const y2 = y.getPixelForValue(0);
+          ctx.save();
+          ctx.fillStyle = 'rgba(239,68,68,.06)';
+          ctx.fillRect(x1, y1, x2-x1, y2-y1);
+          ctx.restore();
+        } catch(e){}
+      }
+    }],
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{display:true,position:'bottom',labels:{boxWidth:10,padding:10,usePointStyle:true},
+          onClick:(e,item,legend)=>{
+            const ci = legend.chart;
+            const mi = item.datasetIndex;
+            const m = ci.getDatasetMeta(mi);
+            m.hidden = m.hidden === null ? !ci.data.datasets[mi].hidden : null;
+            ci.update();
+          }
+        },
+        tooltip:{...TT_DEFAULTS, callbacks:{
+          label:(ctx)=>ctx.dataset.label+': '+(ctx.raw===null?'—':ctx.raw)+'%'
+        }},
+        annotation:{} // reserved
+      },
+      scales:{
+        y:{min:0,max:105,grid:{color:'rgba(28,45,71,.8)'},border:{color:'transparent'},
+           ticks:{callback:v=>v+'%'}},
+        x:{grid:{color:'rgba(28,45,71,.4)'},border:{color:'transparent'}}
+      }
+    }
+  });
+}
+
+/* ═══════════════════════════════════════
+   INSIGHT PANEL
+═══════════════════════════════════════ */
+function renderInsights() {
+  const bullets = [
+    { color:'var(--green-xl)',  text:'<strong>84% Complete</strong> &nbsp;·&nbsp; 16 of 19 tasks done. Pre-Cutover and Cutover phases fully closed.' },
+    { color:'var(--red-xl)',    text:'<strong>Active Blocker</strong> &nbsp;·&nbsp; CAMT file transmission to High Radius failing — missing SFTP public key. Defect raised. Owner: Preeti Saxena.' },
+    { color:'var(--amber-xl)',  text:'<strong>Schedule Slip: +9 days</strong> &nbsp;·&nbsp; 8.1 hours of work remain. Earliest close: <strong>May 9, 17:06</strong> if defect resolved today.' },
+    { color:'var(--blue-xl)',   text:'<strong>SIT Unblocked</strong> &nbsp;·&nbsp; All areas except High Radius SFTP integration can proceed with SIT immediately.' },
+    { color:'var(--teal-xl)',   text:'<strong>Next Action</strong> &nbsp;·&nbsp; Add public key to High Radius SFTP → validate CAMT transmission → execute Smoke Test 2 → final sign-off.' },
+  ];
+  document.getElementById('insight-body').innerHTML = bullets.map(b => `
+    <div class="insight-item">
+      <div class="insight-dot" style="background:${b.color}"></div>
+      <div class="insight-text">${b.text}</div>
+    </div>
+  `).join('');
+}
+
+/* ═══════════════════════════════════════
+   RESOLVED ACCORDION
+═══════════════════════════════════════ */
+function buildResolvedList() {
+  const completed = TASKS.filter(t=>t.status==='Complete');
+  document.getElementById('resolved-list').innerHTML = completed.map(t=>`
+    <div class="resolved-item">
+      <span style="color:var(--green-xl);font-size:11px;flex-shrink:0">✓</span>
+      <span class="ri-name" title="${t.name}">${t.name}</span>
+      <span class="ri-owner">${t.owner.split(' ')[0]}</span>
+      <span class="badge b-complete">Done</span>
+      <span class="ri-date">${t.phase.replace('-Cutover','').replace('Post','Post-CO').replace('Pre','Pre-CO')}</span>
+    </div>
+  `).join('');
+}
+
+function toggleAccordion(head) {
+  head.classList.toggle('open');
+  const body = head.nextElementSibling;
+  body.classList.toggle('open');
+}
+
+/* ═══════════════════════════════════════
+   BLOCKER MARK RESOLVED
+═══════════════════════════════════════ */
+function markResolved(cardId, btn) {
+  const card = document.getElementById(cardId);
+  card.classList.remove('sev-critical','sev-high','sev-medium');
+  card.classList.add('sev-resolved');
+  card.querySelector('.bc-icon').textContent = '✅';
+  btn.className = 'bc-btn btn-resolved';
+  btn.textContent = '✓ Resolved';
+  btn.disabled = true;
+}
+
+/* ═══════════════════════════════════════
+   (4) EVENT LISTENERS — FILTERS
+═══════════════════════════════════════ */
+function applyFilters() {
+  STATE.phaseFilter  = document.getElementById('f-phase').value;
+  STATE.statusFilter = document.getElementById('f-status').value;
+  STATE.teamFilter   = document.getElementById('f-team').value;
+  STATE.ownerFilter  = document.getElementById('f-owner').value;
+  buildGantt();
+  updateKPIs();
+  renderInsights();
+}
+
+function toggleCP() {
+  STATE.cpOnly = !STATE.cpOnly;
+  document.getElementById('f-cp').classList.toggle('active', STATE.cpOnly);
+  applyFilters();
+}
+
+function resetFilters() {
+  STATE.phaseFilter = STATE.statusFilter = STATE.teamFilter = STATE.ownerFilter = '';
+  STATE.cpOnly = false;
+  ['f-phase','f-status','f-team','f-owner'].forEach(id=>{
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('f-cp').classList.remove('active');
+  applyFilters();
+}
+
+function filterByStatus(status) {
+  const cur = document.getElementById('f-status').value;
+  const newVal = cur === status ? '' : status;
+  document.getElementById('f-status').value = newVal;
+  STATE.statusFilter = newVal;
+  applyFilters();
+}
+
+['f-phase','f-status','f-team','f-owner'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', applyFilters);
+});
+
+/* ═══════════════════════════════════════
+   KPI UPDATER
+═══════════════════════════════════════ */
+function updateKPIs() {
+  const filtered = getFiltered();
+  const filterActive = STATE.phaseFilter || STATE.statusFilter || STATE.teamFilter || STATE.ownerFilter || STATE.cpOnly;
+
+  // Always calculate OVERALL KPIs from ALL 19 tasks — never from filtered subset
+  const allTasks  = TASKS;
+  const totalAll  = allTasks.length;                                          // always 19
+  const doneAll   = allTasks.filter(t => t.status === 'Complete').length;     // 16
+  const issuesAll = allTasks.filter(t => t.status === 'Issue').length;        // 1
+  const notDoneAll= allTasks.filter(t => t.status !== 'Complete').length;     // 3 (Issue+Sent+Planned)
+  // Slippage includes not-complete tasks PLUS completed tasks that started late (e.g. #3193 +23.5h)
+  const lateCompleted = allTasks.filter(t => t.status === 'Complete' && t.id === 3193).length; // 1
+  const slippedAll = notDoneAll + lateCompleted;                               // 4 total slipped
+  const cpAll     = allTasks.filter(t => t.cp);                               // 9 CP tasks
+  const cpDoneAll = cpAll.filter(t => t.status === 'Complete').length;        // 5
+
+  const pct    = Math.round(doneAll / totalAll * 100);       // 84%
+  const cpPct  = Math.round(cpDoneAll / cpAll.length * 100); // 56%
+  const slipPct= Math.round(slippedAll / totalAll * 100);   // 4/19 = 21%
+
+  // KPI tiles — always show overall values
+  document.getElementById('kv-complete').textContent = pct + '%';
+  document.getElementById('ks-complete').textContent = doneAll + ' of ' + totalAll + ' tasks' +
+    (filterActive ? ' · ' + filtered.length + ' shown' : '');
+  document.getElementById('kb-complete').style.width = pct + '%';
+
+  document.getElementById('kv-cp').textContent = cpPct + '%';
+  document.getElementById('ks-cp').textContent = cpDoneAll + ' of ' + cpAll.length + ' CP tasks done';
+  document.getElementById('kb-cp').style.width = cpPct + '%';
+
+  document.getElementById('kv-slip').textContent = slipPct + '%';
+  document.getElementById('ks-slip').textContent = slippedAll + ' tasks slipped (3 open + 1 late start)';
+  document.getElementById('kb-slip').style.width = slipPct + '%';
+
+  document.getElementById('kv-block').textContent = issuesAll;
+  document.getElementById('ks-block').textContent = issuesAll > 0 ? 'CAMT/SFTP public key defect · 201h overdue' : 'No active blockers';
+  document.getElementById('kb-block').style.width = issuesAll > 0 ? '100%' : '0%';
+
+  // Schedule slip & ETA always fixed from source data
+  document.getElementById('kv-sched').textContent = '+9d';
+  document.getElementById('ks-sched').textContent = '201h beyond Apr 30 baseline';
+  document.getElementById('kv-eta').textContent = 'May 9';
+  document.getElementById('ks-eta').textContent = '17:06 · if blocker resolved today';
+
+  // Live filter counter
+  document.getElementById('task-count').textContent = filtered.length;
+
+  // Gauge — always reflects all-task completion
+  document.getElementById('gauge-pct-val').textContent = pct + '%';
+  document.getElementById('gauge-count-val').textContent = doneAll + ' / ' + totalAll + ' complete';
+  document.getElementById('donut-center').textContent = filterActive ? filtered.length : totalAll;
+
+  // Gauge arc: 0% → dashoffset 273.5, 100% → 0
+  const arcVal = 273.5 - (pct / 100) * 273.5;
+  document.getElementById('gauge-arc').style.strokeDashoffset = arcVal;
+  const arcColor = pct >= 80 ? 'url(#g-grad)' : pct >= 60 ? '#f59e0b' : '#ef4444';
+  document.getElementById('gauge-arc').setAttribute('stroke', arcColor === 'url(#g-grad)' ? '' : arcColor);
+  if (arcColor === 'url(#g-grad)') document.getElementById('gauge-arc').setAttribute('stroke', 'url(#g-grad)');
+  else document.getElementById('gauge-arc').setAttribute('stroke', arcColor);
+}
+
+/* ═══════════════════════════════════════
+   (6) ANIMATIONS — PAGE LOAD
+═══════════════════════════════════════ */
+// RADAR CHART — Health Score
+function initRadarChart() {
+  const canvas = document.getElementById('radarChart');
+  if (!canvas) return;
+  const existing = Chart.getChart(canvas);
+  if (existing) return;
+  new Chart(canvas.getContext('2d'), {
+    type: 'radar',
+    data: {
+      labels: ['Connectivity', 'Smoke Testing', 'Data Validation', 'Transport\nReadiness', 'Config\n& Jira', 'Resource\nLoad'],
+      datasets: [{
+        label: 'Risk Level (1–5)',
+        data: [5, 4, 2, 1, 1, 4],
+        backgroundColor: 'rgba(239,68,68,.12)',
+        borderColor: 'rgba(239,68,68,.7)',
+        pointBackgroundColor: 'var(--red-l)',
+        pointBorderColor: 'transparent',
+        pointRadius: 4,
+        borderWidth: 1.5,
+      }, {
+        label: 'Target (all ≤ 1)',
+        data: [1, 1, 1, 1, 1, 1],
+        backgroundColor: 'rgba(34,197,94,.05)',
+        borderColor: 'rgba(34,197,94,.3)',
+        pointRadius: 2,
+        borderWidth: 1,
+        borderDash: [3, 3],
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: true, position: 'bottom', labels: { boxWidth: 8, padding: 8, font: { size: 9 } } },
+        tooltip: { ...TT_DEFAULTS }
+      },
+      scales: {
+        r: {
+          min: 0, max: 5, ticks: { stepSize: 1, font: { size: 9 }, backdropColor: 'transparent' },
+          pointLabels: { font: { size: 9, family: "'IBM Plex Mono', monospace" }, color: '#4a6080' },
+          grid: { color: 'rgba(28,45,71,.8)' },
+          angleLines: { color: 'rgba(28,45,71,.6)' }
+        }
+      }
+    }
+  });
+}
+
+window.addEventListener('load', () => {
+  // Animate KPI bars
+  document.querySelectorAll('.kpi-bar').forEach(el => {
+    const w = el.style.width;
+    el.style.width = '0%';
+    el.style.transition = 'none';
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        el.style.transition = 'width 1.4s cubic-bezier(.4,0,.2,1)';
+        el.style.width = w;
+      });
+    });
+  });
+
+  // Animate phase bars
+  setTimeout(()=>{
+    document.querySelectorAll('.pb-fill').forEach(el=>{
+      el.style.width = el.dataset.w + '%';
+    });
+  }, 400);
+
+  // Animate resource bars
+  setTimeout(()=>{
+    document.querySelectorAll('.res-bar').forEach(el=>{
+      el.style.transition = 'width 1.2s cubic-bezier(.4,0,.2,1)';
+      el.style.width = el.dataset.w + '%';
+    });
+  }, 600);
+
+  // Animate gauge arc
+  const arc = document.getElementById('gauge-arc');
+  arc.style.strokeDashoffset = '273.5';
+  setTimeout(()=>{
+    arc.style.strokeDashoffset = '43.8';
+  }, 300);
+
+  // Initialise tab state — dashboard visible, gantt and ptg hidden
+  document.getElementById('panel-dashboard').style.display = 'block';
+  document.getElementById('panel-gantt').style.display = 'none';
+  const ptgEl = document.getElementById('panel-ptg');
+  if (ptgEl) ptgEl.style.display = 'none';
+
+  // Build all components
+  buildGantt();
+  initDonutChart();
+  initDelayChart();
+  initTeamChart();
+  initPTGChart();
+  initRadarChart();
+  renderInsights();
+  buildResolvedList();
+  updateKPIs();
+});
+</script>
+
+<!-- ═══ AI KPI MODAL ═══ -->
+<div id="ai-modal-overlay" onclick="closeModalOverlay(event)">
+  <div id="ai-modal" role="dialog" aria-modal="true" aria-labelledby="modal-kpi-name">
+    <div class="modal-head">
+      <div class="modal-icon" id="modal-icon">✦</div>
+      <div class="modal-head-text">
+        <div class="modal-kpi-name" id="modal-kpi-name">KPI Analysis</div>
+        <div class="modal-kpi-val" id="modal-kpi-val">—</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-prompts">
+      <div class="modal-prompts-label">✦ Quick questions</div>
+      <div class="modal-prompt-chips" id="modal-chips"></div>
+    </div>
+    <div class="modal-chat" id="modal-chat" role="log" aria-live="polite"></div>
+    <div class="modal-input-row">
+      <input class="modal-input" id="modal-input" type="text"
+             placeholder="Ask anything about this KPI…"
+             onkeydown="if(event.key==='Enter')sendModalMessage()"
+             aria-label="Ask about this KPI"/>
+      <button class="modal-send" id="modal-send-btn" onclick="sendModalMessage()" aria-label="Send">➤</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════
+   KPI AI MODAL — CONFIGURATION
+═══════════════════════════════════════ */
+const KPI_CONFIG = {
+  complete: {
+    name: 'Overall % Complete',
+    icon: '✅',
+    valFn: () => document.getElementById('kv-complete').textContent,
+    color: '#4ade80',
+    context: `Overall completion: 84% (16 of 19 tasks complete). Pre-Cutover: 100% (8/8), Cutover: 100% (4/4), Post-Cutover: 57% (4/7). 1 Issue, 1 Sent (blocked), 1 Planned.`,
+    chips: [
+      'What does 84% completion mean for go-live readiness?',
+      'Which phases are fully complete?',
+      'What are the remaining 3 tasks?',
+      'How does this compare to the baseline target?',
+    ],
+    systemPrompt: `You are Your Working Assistant embedded in an executive dashboard. Answer questions about the "Overall % Complete" KPI for the FEB 2027 IM 2.2 CB SIT Cutover. Context: 16 of 19 tasks complete (84%). Pre-Cutover 100%, Cutover 100%, Post-Cutover 57%. Remaining tasks: Task 3220 (S/4 connectivity – Issue, 201h overdue), Task 3221 (Smoke Testing Scenario 2 – Sent, blocked by 3220), Task 3200 (Final SIT Readiness Milestone – Planned). Be concise, executive-grade, and actionable. Use bullet points for lists. Highlight risks in your answers.`
+  },
+  cp: {
+    name: 'Critical Path %',
+    icon: '🔗',
+    valFn: () => document.getElementById('kv-cp').textContent,
+    color: '#22d3ee',
+    context: `Critical path: 3139→3168→3171→3172→3173→3220→3221→3200. 5 of 9 tasks complete (56%). Blocker: Task 3220 (S/4 connectivity, Issue). Remaining CP: 3220, 3221, 3200.`,
+    chips: [
+      'What is the critical path and why does it matter?',
+      'Which CP tasks are still open?',
+      'What happens if the blocker is not resolved today?',
+      'How do I get the critical path to 100%?',
+    ],
+    systemPrompt: `You are Your Working Assistant. Answer questions about the "Critical Path %" KPI. Critical path chain: 3139→3168→3171→3172→3173→3220→3221→3200 (9 tasks). 5 complete (56%). The active blocker is Task 3220 (CAMT File Transmission Failure to High Radius — Missing SFTP Public Key, owner: Preeti Saxena, 201h overdue). This blocks Task 3221 (Smoke Testing Scenario 2) and Task 3200 (Final SIT Readiness Milestone). Earliest possible completion is May 9, 17:06 if resolved today. Be concise, executive-grade, and actionable.`
+  },
+  slip: {
+    name: 'Task Slippage %',
+    icon: '⚠',
+    valFn: () => document.getElementById('kv-slip').textContent,
+    color: '#fbbf24',
+    context: `Task slippage: 21% (4 of 19 tasks not complete on time). 1 Issue (Task 3220, +201h), 1 Sent/blocked (Task 3221), 1 Planned at risk (Task 3200), 1 completed with late start (Task 3193, +23.5h). One positive: Task 3143 finished 40h early.`,
+    chips: [
+      'Which tasks are slipping and by how much?',
+      'What is causing the slippage?',
+      'How can we reduce slippage in future cutover runs?',
+      'Is 21% slippage acceptable for a SIT cutover?',
+    ],
+    systemPrompt: `You are Your Working Assistant. Answer questions about the "Task Slippage %" KPI. 21% slippage (4 of 19 tasks). Slipped tasks: Task 3220 (CAMT/SFTP public key defect, Issue, +201h, defect raised), Task 3221 (Smoke Test 2, Sent/blocked), Task 3200 (Final Milestone, Planned/at-risk), Task 3193 (Master Data Validation, completed but started 23.5h late). Positive: Task 3143 (Validate Transport List) finished 40 hours early. Root causes: CAMT file transmission failure due to missing SFTP public key on High Radius, resource dependency (Nikhil owns 12/19 tasks = SPOF). Be concise, executive-grade, actionable.`
+  },
+  sched: {
+    name: 'Schedule Slip',
+    icon: '⏱',
+    valFn: () => document.getElementById('kv-sched').textContent,
+    color: '#f87171',
+    context: `Schedule slip: +9 days (201 hours) beyond Apr 30, 15:18 baseline. Caused entirely by Task 3220 (S/4 connectivity blocker). Remaining work is only 8.1h (2+6+0.1h). Best case completion: May 9, 17:06. Moderate: May 10. At risk: May 13+.`,
+    chips: [
+      'Why are we 9 days behind the baseline?',
+      'What is the earliest we can complete now?',
+      'What are the 3 completion scenarios?',
+      'How do we prevent this slip in future cutover runs?',
+    ],
+    systemPrompt: `You are Your Working Assistant. Answer questions about the "Schedule Slip" KPI. Current slip: +9 days (201 hours) past the Apr 30, 15:18 baseline. The slip is caused entirely by Task 3220 (CAMT file transmission failure to High Radius — missing SFTP public key) which has been in Issue status since Apr 28. A blocker defect has been raised. Only 8.1 hours of work remains (Task 3220: 2h, Task 3221: 6h, Task 3200: 0.1h). Scenarios: Best case May 9 17:06 (resolve today), Moderate May 10 (1-day resolution), At-risk May 13+ (no SLA). Be concise, executive-grade, actionable.`
+  },
+  block: {
+    name: 'Active Blockers',
+    icon: '⛔',
+    valFn: () => document.getElementById('kv-block').textContent,
+    color: '#f87171',
+    context: `1 critical blocker: Task 3220 "CAMT File Transmission Failure to High Radius — Missing SFTP Public Key". Owner: Preeti Saxena. Team: TMS Config. 201h overdue since Apr 28. Cascades to: Task 3221 (Smoke Testing Scenario 2) and Task 3200 (Final Milestone). Root cause: integration/environment failure.`,
+    chips: [
+      'What exactly is blocking Task 3220?',
+      'Who do I escalate this to right now?',
+      'What is the step-by-step resolution plan?',
+      'What is the downstream impact of this blocker?',
+    ],
+    systemPrompt: `You are Your Working Assistant. Answer questions about the "Active Blockers" KPI. The single critical blocker is Task 3220: "CAMT File Transmission Failure to High Radius — Missing SFTP Public Key". Owner: Preeti Saxena. Team: TMS Project - Config. Status: Issue. 201 hours overdue since Apr 28. Dependency chain: Task 3173 (completed Apr 23) → Task 3220 (Issue) → Task 3221 (Smoke Test 2, blocked) → Task 3200 (Final Milestone). Resolution: add missing public key to High Radius SFTP connection, resolve blocker defect, re-run CAMT file transmission and validate, assign Preeti Saxena + Nikhil Eppalapally as joint owners with 4h SLA. Be concise, executive-grade, actionable.`
+  },
+  eta: {
+    name: 'Est. Completion',
+    icon: '🎯',
+    valFn: () => document.getElementById('kv-eta').textContent,
+    color: '#60a5fa',
+    context: `Estimated completion: May 9, 17:06 (best case). Baseline was Apr 30, 15:18. Slip: +9 days. Scenarios: Best case May 9 17:06, Moderate May 10, At-risk May 13+. Remaining work: 8.1h (SFTP key fix + CAMT validation 2h + Smoke Test 2: Send Statement to High Radius 6h + Final Milestone 0.1h).`,
+    chips: [
+      'What needs to happen to hit the May 9 completion?',
+      'What does the May 13 at-risk scenario mean for SIT?',
+      'How do I communicate the delay to my stakeholders?',
+      'What is the exact sequence of remaining tasks?',
+    ],
+    systemPrompt: `You are Your Working Assistant. Answer questions about the "Estimated Completion" KPI. Baseline was Apr 30, 15:18. Current slip: +9 days. Best case: May 9, 17:06 (S/4 resolved by 11:00 today → Smoke Test 2 6h → Final sign-off 0.1h). Moderate: May 10, ~17:00 (infra team resolves EOD today). At-risk: May 13+ (no SLA, may require SIT window rescheduling). Recovery steps: (1) Resolve S/4 connectivity (Preeti + Nikhil, 4h SLA), (2) Run Smoke Test Scenario 2 (Nikhil, 6h), (3) Final sign-off by Nandini Ray Nag (0.1h). Be concise, executive-grade, actionable.`
+  }
+};
+
+/* ═══════════════════════════════════════
+   MODAL STATE
+═══════════════════════════════════════ */
+let currentKpi = null;
+let chatHistory = [];
+let isStreaming = false;
+
+/* ═══════════════════════════════════════
+   OPEN / CLOSE MODAL
+═══════════════════════════════════════ */
+function openKpiModal(kpiKey) {
+  const cfg = KPI_CONFIG[kpiKey];
+  if (!cfg) return;
+  currentKpi = kpiKey;
+  chatHistory = [];
+
+  // Set header
+  document.getElementById('modal-icon').textContent = cfg.icon;
+  document.getElementById('modal-kpi-name').textContent = cfg.name;
+  document.getElementById('modal-kpi-val').textContent = cfg.valFn();
+  document.getElementById('modal-kpi-val').style.color = cfg.color;
+
+  // Build chips
+  const chipsEl = document.getElementById('modal-chips');
+  chipsEl.innerHTML = '';
+  cfg.chips.forEach(q => {
+    const chip = document.createElement('button');
+    chip.className = 'modal-chip';
+    chip.textContent = q;
+    chip.onclick = () => {
+      document.getElementById('modal-input').value = q;
+      sendModalMessage();
+    };
+    chipsEl.appendChild(chip);
+  });
+
+  // Clear chat and show greeting
+  const chatEl = document.getElementById('modal-chat');
+  chatEl.innerHTML = '';
+  appendAiMessage(
+    `Hi! I'm Your Working Assistant for <strong style="color:${cfg.color}">${cfg.name}</strong>. ` +
+    `Current value: <strong style="color:${cfg.color}">${cfg.valFn()}</strong>.<br><br>` +
+    `Click a quick question above or type anything — I'll give you a clear, executive-ready answer about this metric.`
+  );
+
+  // Show modal
+  document.getElementById('ai-modal-overlay').classList.add('open');
+  document.getElementById('modal-input').focus();
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('ai-modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  currentKpi = null;
+}
+
+function closeModalOverlay(e) {
+  if (e.target === document.getElementById('ai-modal-overlay')) closeModal();
+}
+
+// ESC key to close
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+
+/* ═══════════════════════════════════════
+   CHAT FUNCTIONS
+═══════════════════════════════════════ */
+function appendUserMessage(text) {
+  const chatEl = document.getElementById('modal-chat');
+  const msg = document.createElement('div');
+  msg.className = 'chat-msg user';
+  msg.innerHTML = `
+    <div class="chat-bubble user">${escHtml(text)}</div>
+    <div class="chat-avatar user-av">U</div>
+  `;
+  chatEl.appendChild(msg);
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+function appendAiMessage(html) {
+  const chatEl = document.getElementById('modal-chat');
+  const msg = document.createElement('div');
+  msg.className = 'chat-msg';
+  msg.innerHTML = `
+    <div class="chat-avatar ai-av">✦</div>
+    <div class="chat-bubble ai">${html}</div>
+  `;
+  chatEl.appendChild(msg);
+  chatEl.scrollTop = chatEl.scrollHeight;
+  return msg.querySelector('.chat-bubble.ai');
+}
+
+function showTyping() {
+  const chatEl = document.getElementById('modal-chat');
+  const typing = document.createElement('div');
+  typing.className = 'chat-msg';
+  typing.id = 'typing-indicator';
+  typing.innerHTML = `
+    <div class="chat-avatar ai-av">✦</div>
+    <div class="chat-typing">
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    </div>
+  `;
+  chatEl.appendChild(typing);
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+function hideTyping() {
+  const el = document.getElementById('typing-indicator');
+  if (el) el.remove();
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function formatAiResponse(text) {
+  // Convert markdown-like patterns to styled HTML
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`(.*?)`/g, '<code style="background:rgba(6,182,212,.12);color:#22d3ee;padding:1px 4px;border-radius:3px;font-family:var(--mono);font-size:10px">$1</code>')
+    .replace(/^### (.*)/gm, '<div style="font-size:11px;font-weight:700;color:var(--teal-xl);margin:8px 0 4px">$1</div>')
+    .replace(/^## (.*)/gm,  '<div style="font-size:12px;font-weight:700;color:var(--t0);margin:8px 0 4px">$1</div>')
+    .replace(/^- (.*)/gm,   '<div style="display:flex;gap:6px;margin:2px 0"><span style="color:var(--teal-l);flex-shrink:0">›</span><span>$1</span></div>')
+    .replace(/^\d+\. (.*)/gm,'<div style="display:flex;gap:6px;margin:2px 0"><span style="color:var(--teal-l);flex-shrink:0;font-family:var(--mono)">·</span><span>$1</span></div>')
+    .replace(/\n\n/g, '<br><br>')
+    .replace(/\n/g, '<br>');
+}
+
+/* ═══════════════════════════════════════
+   SEND MESSAGE & CALL CLAUDE API
+═══════════════════════════════════════ */
+async function sendModalMessage() {
+  if (isStreaming || !currentKpi) return;
+  const input = document.getElementById('modal-input');
+  const question = input.value.trim();
+  if (!question) return;
+
+  const cfg = KPI_CONFIG[currentKpi];
+  input.value = '';
+  isStreaming = true;
+
+  // Disable send button
+  const sendBtn = document.getElementById('modal-send-btn');
+  sendBtn.disabled = true;
+
+  // Highlight matching chip
+  document.querySelectorAll('.modal-chip').forEach(c => {
+    c.classList.toggle('active', c.textContent === question);
+  });
+
+  // Add user message to UI
+  appendUserMessage(question);
+
+  // Add to chat history
+  chatHistory.push({ role: 'user', content: question });
+
+  // Show typing
+  showTyping();
+
+  try {
+    const messages = chatHistory.map(m => ({ role: m.role, content: m.content }));
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: cfg.systemPrompt + `\n\nLive dashboard data snapshot:\n${cfg.context}\n\nToday's date: May 9, 2026. Be concise (under 200 words). Use bullet points. Format key numbers in bold. Avoid jargon. Write for a non-technical program manager.`,
+        messages
+      })
+    });
+
+    hideTyping();
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error?.message || `HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    const replyText = data.content?.[0]?.text || 'Sorry, I could not generate a response.';
+
+    // Add AI reply to history
+    chatHistory.push({ role: 'assistant', content: replyText });
+
+    // Stream the text character-by-character for a typing effect
+    const bubble = appendAiMessage('');
+    await streamText(bubble, replyText);
+
+  } catch (err) {
+    hideTyping();
+    // Fallback: rich pre-computed answers when API unavailable
+    const fallback = getFallbackAnswer(currentKpi, question);
+    chatHistory.push({ role: 'assistant', content: fallback.plain });
+    const bubble = appendAiMessage('');
+    await streamText(bubble, fallback.html, true);
+    console.warn('API call failed, using fallback:', err.message);
+  } finally {
+    isStreaming = false;
+    sendBtn.disabled = false;
+    document.getElementById('modal-input').focus();
+    document.querySelectorAll('.modal-chip').forEach(c => c.classList.remove('active'));
+  }
+}
+
+/* Stream text into a bubble element */
+async function streamText(bubble, text, isHtml = false) {
+  const formatted = isHtml ? text : formatAiResponse(text);
+  bubble.innerHTML = '';
+  // Fast-stream: chunk by word for smooth effect
+  const words = formatted.split(' ');
+  for (let i = 0; i < words.length; i += 3) {
+    bubble.innerHTML = formatted.split(' ').slice(0, i+3).join(' ');
+    const chatEl = document.getElementById('modal-chat');
+    if (chatEl) chatEl.scrollTop = chatEl.scrollHeight;
+    await new Promise(r => setTimeout(r, 18));
+  }
+  bubble.innerHTML = formatted;
+  const chatEl = document.getElementById('modal-chat');
+  if (chatEl) chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+/* ═══════════════════════════════════════
+   FALLBACK ANSWERS (when API unavailable)
+═══════════════════════════════════════ */
+function getFallbackAnswer(kpiKey, question) {
+  const q = question.toLowerCase();
+  const answers = {
+    complete: {
+      default: {
+        html: `<strong class="ok">84% complete</strong> means 16 of 19 tasks are done.<br><br>
+          <div style="display:flex;gap:6px;margin:2px 0"><span style="color:var(--teal-l)">›</span><span><strong>Pre-Cutover:</strong> 100% ✓ (8/8)</span></div>
+          <div style="display:flex;gap:6px;margin:2px 0"><span style="color:var(--teal-l)">›</span><span><strong>Cutover:</strong> 100% ✓ (4/4)</span></div>
+          <div style="display:flex;gap:6px;margin:2px 0"><span style="color:var(--teal-l)">›</span><span><strong>Post-Cutover:</strong> <span class="warn">57%</span> (4/7) — blocker active</span></div>
+          <br>Only <strong>8.1 hours of work remain</strong>. The plan is effectively done except for the CAMT/SFTP public key defect blocking the final 3 tasks.`,
+        plain: '84% complete. Pre-Cutover 100%, Cutover 100%, Post-Cutover 57%. 8.1h remaining.'
+      }
+    },
+    sched: {
+      default: {
+        html: `The schedule has slipped <strong class="danger">+9 days (201 hours)</strong> past the Apr 30 baseline.<br><br>
+          <strong>Root cause:</strong> Task 3220 (CAMT file transmission to High Radius — missing SFTP public key) has been in Issue status since Apr 28 — a blocker defect has been raised.<br><br>
+          <strong>The good news:</strong> Only <strong>8.1 hours of work remain</strong>. The moment the connectivity issue is resolved:<br>
+          <div style="display:flex;gap:6px;margin:3px 0"><span style="color:var(--teal-l)">›</span><span>Smoke Test 2 starts (6h)</span></div>
+          <div style="display:flex;gap:6px;margin:3px 0"><span style="color:var(--teal-l)">›</span><span>Final sign-off (0.1h)</span></div>
+          <div style="display:flex;gap:6px;margin:3px 0"><span style="color:var(--green-xl)">›</span><span><strong>Completion: May 9, 17:06</strong></span></div>`,
+        plain: '+9 days slip caused by Task 3220 CAMT/SFTP public key defect. Blocker defect raised. 8.1h remaining. Best case May 9 17:06.'
+      }
+    },
+    block: {
+      default: {
+        html: `<strong class="danger">⛔ Critical Blocker: Task #3220</strong><br><br>
+          <strong>"CAMT File Transmission Failure to High Radius — Missing SFTP Public Key"</strong><br>
+          Owner: Preeti Saxena · Team: TMS Config<br><br>
+          <strong>Escalation steps:</strong><br>
+          <div style="display:flex;gap:6px;margin:2px 0"><span style="color:var(--teal-l)">1.</span><span>Engage infra/middleware team with <strong>4-hour SLA</strong></span></div>
+          <div style="display:flex;gap:6px;margin:2px 0"><span style="color:var(--teal-l)">2.</span><span>Add the missing public key to the High Radius SFTP connection</span></div>
+          <div style="display:flex;gap:6px;margin:2px 0"><span style="color:var(--teal-l)">3.</span><span>Check HighRadius API endpoint availability</span></div>
+          <div style="display:flex;gap:6px;margin:2px 0"><span style="color:var(--teal-l)">4.</span><span>Assign <strong>Preeti + Nikhil</strong> as joint owners</span></div>
+          <br>Once resolved: Smoke Test 2 (6h) → Final Milestone (0.1h) → <strong class="ok">SIT Complete</strong>`,
+        plain: 'Task 3220 CAMT/SFTP public key defect. Add public key to High Radius SFTP. Resolve blocker defect. Re-run CAMT transmission.'
+      }
+    },
+    slip: {
+      default: {
+        html: `<strong class="warn">21% slippage</strong> = 4 of 19 tasks not completed on time.<br><br>
+          <div style="display:flex;gap:6px;margin:2px 0"><span style="color:var(--red-xl)">›</span><span><strong>#3220</strong> — S/4 connectivity, <span class="danger">+201h overdue</span></span></div>
+          <div style="display:flex;gap:6px;margin:2px 0"><span style="color:var(--amber-xl)">›</span><span><strong>#3221</strong> — Smoke Test 2, blocked by #3220</span></div>
+          <div style="display:flex;gap:6px;margin:2px 0"><span style="color:var(--amber-xl)">›</span><span><strong>#3200</strong> — Final Milestone, at risk</span></div>
+          <div style="display:flex;gap:6px;margin:2px 0"><span style="color:var(--amber-xl)">›</span><span><strong>#3193</strong> — Master Data Validation, started 23.5h late (now complete)</span></div>
+          <br><strong class="ok">Positive:</strong> Task #3143 finished <strong>40 hours early</strong> — an unused buffer.`,
+        plain: '21% slippage: Tasks 3220, 3221, 3200 blocked/open. Task 3193 late start. Task 3143 40h early.'
+      }
+    },
+    cp: {
+      default: {
+        html: `The <strong class="hi">Critical Path</strong> is the sequence of tasks that determines the earliest possible completion:<br><br>
+          <div style="font-size:10px;font-family:var(--mono);background:rgba(6,182,212,.06);border:1px solid rgba(6,182,212,.15);border-radius:6px;padding:8px 10px;margin:6px 0">3139 → 3168 → 3171 → 3172 → 3173 → <span class="danger">3220</span> → <span class="warn">3221</span> → <span class="warn">3200</span></div>
+          <div style="display:flex;gap:6px;margin:2px 0"><span class="ok">✓</span><span>5 tasks complete (3139, 3168, 3171, 3172, 3173)</span></div>
+          <div style="display:flex;gap:6px;margin:2px 0"><span class="danger">✗</span><span>3220 — <strong class="danger">BLOCKER</strong> (Issue, +201h)</span></div>
+          <div style="display:flex;gap:6px;margin:2px 0"><span style="color:var(--t3)">○</span><span>3221, 3200 — waiting</span></div>
+          <br><strong>Fix #3220 = 100% critical path = SIT complete.</strong>`,
+        plain: 'Critical path 56% done. Blocker: Task 3220. Chain: 3139→3168→3171→3172→3173→3220→3221→3200.'
+      }
+    },
+    eta: {
+      default: {
+        html: `<strong>3 completion scenarios:</strong><br><br>
+          <div style="border-left:2px solid var(--green-l);padding:6px 10px;margin:4px 0;background:rgba(34,197,94,.05);border-radius:0 6px 6px 0">
+            <strong class="ok">Best Case — May 9, 17:06</strong><br>
+            <span style="font-size:10px">S/4 resolved by 11:00 today → Smoke Test 2 (6h) → Sign-off (0.1h)</span>
+          </div>
+          <div style="border-left:2px solid var(--amber-l);padding:6px 10px;margin:4px 0;background:rgba(245,158,11,.05);border-radius:0 6px 6px 0">
+            <strong class="warn">Moderate — May 10, ~17:00</strong><br>
+            <span style="font-size:10px">Infra team resolves by EOD today. Tests run tomorrow.</span>
+          </div>
+          <div style="border-left:2px solid var(--red-l);padding:6px 10px;margin:4px 0;background:rgba(239,68,68,.05);border-radius:0 6px 6px 0">
+            <strong class="danger">At Risk — May 13+</strong><br>
+            <span style="font-size:10px">No SLA set. Daily slippage continues. SIT window may need rescheduling.</span>
+          </div>`,
+        plain: 'Best case May 9 17:06. Moderate May 10. At risk May 13+. All depend on Task 3220 resolution.'
+      }
+    }
+  };
+
+  const kpiAnswers = answers[kpiKey] || {};
+  return kpiAnswers[q] || kpiAnswers.default || {
+    html: `Based on the current data, <strong>${KPI_CONFIG[kpiKey].name}</strong> is at <strong style="color:${KPI_CONFIG[kpiKey].color}">${KPI_CONFIG[kpiKey].valFn()}</strong>. The key driver is the active S/4 connectivity blocker (Task #3220, +201h overdue). Resolving this single task unlocks the remaining 8.1h of work and closes the plan.`,
+    plain: `${KPI_CONFIG[kpiKey].name}: ${KPI_CONFIG[kpiKey].valFn()}. Key driver: Task 3220 S/4 blocker.`
+  };
+}
+</script>
+</body>
+</html>
